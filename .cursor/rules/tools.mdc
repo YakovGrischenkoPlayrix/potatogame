@@ -3,7 +3,7 @@ alwaysApply: true
 ---
 
 # Build game
-Go to ./build directory.
+Go to the ./build directory. If it doesn't exist, create it.
 Configure the project 'cmake .. -DCMAKE_TOOLCHAIN_FILE=C:/W/vcpkg/scripts/buildsystems/vcpkg.cmake'
 Build the project 'cmake --build'
 
