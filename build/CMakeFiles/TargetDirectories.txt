@@ -1,3 +1,0 @@
-C:/Users/pcadmin/Documents/GitHub/potatogame/build/CMakeFiles/BrotatoGame.dir
-C:/Users/pcadmin/Documents/GitHub/potatogame/build/CMakeFiles/ALL_BUILD.dir
-C:/Users/pcadmin/Documents/GitHub/potatogame/build/CMakeFiles/ZERO_CHECK.dir
