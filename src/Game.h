@@ -10,6 +10,7 @@
 #include "Material.h"
 #include "Weapon.h"
 #include "Shop.h"
+#include "SpeedUpBooster.h"
 
 // Forward declarations
 class SlimeEnemy;
@@ -60,6 +61,7 @@ private:
     void checkMeleeAttacks();
     void updateExperienceCollection();
     void updateMaterialCollection();
+    void updateBoosterCollection();
     float getMaterialDropChance() const;
     void renderUI();
     
@@ -73,6 +75,8 @@ private:
     std::vector<SpawnIndicator> spawnIndicators;
     std::vector<std::unique_ptr<ExperienceOrb>> experienceOrbs;
     std::vector<std::unique_ptr<Material>> materials;
+    std::unique_ptr<SpeedUpBooster> speedUpBooster; // at most one
+    float boosterSpawnTimer = 0.0f; // spawns every 10 seconds
     
     float timeSinceLastSpawn;
     int score;

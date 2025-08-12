@@ -71,6 +71,10 @@ public:
         }
         return nullptr;
     }
+
+    // Temporary effects
+    void applyFireRateBoost(float multiplier, float durationSeconds);
+    float getFireRateMultiplier() const { return fireRateMultiplier; }
     
 private:
     Vector2 position;
@@ -93,4 +97,8 @@ private:
     
     // Player sprite
     SDL_Texture* playerTexture;
+
+    // Temporary buff state
+    float fireRateMultiplier = 1.0f;
+    float fireRateBoostRemaining = 0.0f;
 };

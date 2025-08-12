@@ -173,12 +173,16 @@ void Weapon::update(float deltaTime, const Vector2& weaponPos,
                    const Vector2& aimDirection,
                    std::vector<std::unique_ptr<Bullet>>& bullets,
                    const Player& player) {
-    
     timeSinceLastShot += deltaTime;
     muzzleFlashTimer = std::max(0.0f, muzzleFlashTimer - deltaTime);
-    
+
+    // Effective fire interval accounts for player's attackSpeed stat and temporary fire-rate boosts
+    float effectiveMultiplier = player.getStats().attackSpeed * player.getFireRateMultiplier();
+    if (effectiveMultiplier < 0.1f) effectiveMultiplier = 0.1f; // safety clamp
+    float requiredCooldown = stats.attackSpeed / effectiveMultiplier;
+
     // Fire in the direction player is aiming if ready
-    if (canFire()) {
+    if (timeSinceLastShot >= requiredCooldown) {
         fire(weaponPos, aimDirection, bullets, player);
         timeSinceLastShot = 0.0f;
         muzzleFlashTimer = 0.1f; // Show muzzle flash for 0.1 seconds

@@ -45,6 +45,15 @@ void Player::update(float deltaTime) {
     velocity = Vector2(0, 0);
     
     timeSinceLastShot += deltaTime;
+
+    // Update temporary fire rate boost timer
+    if (fireRateBoostRemaining > 0.0f) {
+        fireRateBoostRemaining -= deltaTime;
+        if (fireRateBoostRemaining <= 0.0f) {
+            fireRateBoostRemaining = 0.0f;
+            fireRateMultiplier = 1.0f;
+        }
+    }
     
     // Health regeneration
     if (stats.healthRegen > 0) {
@@ -199,11 +208,19 @@ void Player::takeDamage(int damage) {
 }
 
 bool Player::canShoot() const {
-    return timeSinceLastShot >= (shootCooldown / stats.attackSpeed);
+    // Apply both player attackSpeed stat and temporary fireRateMultiplier
+    float effectiveAttackSpeed = stats.attackSpeed * fireRateMultiplier;
+    return timeSinceLastShot >= (shootCooldown / effectiveAttackSpeed);
 }
 
 void Player::shoot() {
     timeSinceLastShot = 0;
+}
+
+void Player::applyFireRateBoost(float multiplier, float durationSeconds) {
+    // If a boost is already active, refresh duration and take the higher multiplier
+    fireRateMultiplier = std::max(fireRateMultiplier, multiplier);
+    fireRateBoostRemaining = durationSeconds;
 }
 
 void Player::addWeapon(std::unique_ptr<Weapon> weapon) {
