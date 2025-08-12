@@ -15,5 +15,4 @@ Configure the project 'cmake .. -DCMAKE_TOOLCHAIN_FILE=C:/W/vcpkg/scripts/builds
 Build the project 'cmake --build'
 
 # Run game
-Go to ./build directory.
-Run .\Debug\BrotatoGame.exe
+Run ./build/Debug/BrotatoGame.exe
