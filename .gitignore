@@ -1,4 +1,5 @@
 # Ignore Claude/Cursor local settings
 .claude/
+build*/
 \# Ignore accidental Windows device-name file
 nul
