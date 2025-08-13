@@ -201,12 +201,32 @@ void Game::update(float deltaTime) {
     for (auto& material : materials) {
         material->update(deltaTime);
     }
+
+    // Handle booster lifetime and periodic spawn (at most one)
+    boosterSpawnTimer += deltaTime;
+    if (!speedUpBooster && boosterSpawnTimer >= 10.0f) {
+        boosterSpawnTimer = 0.0f;
+        static std::random_device rd;
+        static std::mt19937 gen(rd());
+        std::uniform_real_distribution<float> xdist(50.0f, static_cast<float>(WINDOW_WIDTH - 50));
+        std::uniform_real_distribution<float> ydist(50.0f, static_cast<float>(WINDOW_HEIGHT - 50));
+        Vector2 spawnPos(xdist(gen), ydist(gen));
+        speedUpBooster = std::make_unique<SpeedUpBooster>(spawnPos);
+        speedUpBooster->initialize(renderer);
+    }
+    if (speedUpBooster) {
+        speedUpBooster->update(deltaTime);
+        if (!speedUpBooster->isAlive()) {
+            speedUpBooster.reset();
+        }
+    }
     
     spawnEnemies();
     checkCollisions();
     checkMeleeAttacks();
     updateExperienceCollection();
     updateMaterialCollection();
+    updateBoosterCollection();
     
     bullets.erase(std::remove_if(bullets.begin(), bullets.end(),
         [](const std::unique_ptr<Bullet>& bullet) {
@@ -290,6 +310,18 @@ void Game::updateMaterialCollection() {
     }
 }
 
+void Game::updateBoosterCollection() {
+    if (!speedUpBooster || !speedUpBooster->isAlive()) return;
+    Vector2 playerPos = player->getPosition();
+    float pickupRange = player->getStats().pickupRange;
+    float distance = playerPos.distance(speedUpBooster->getPosition());
+    if (distance <= pickupRange + speedUpBooster->getRadius()) {
+        // Apply 5x fire rate for 5 seconds
+        player->applyFireRateBoost(5.0f, 5.0f);
+        speedUpBooster->collect();
+    }
+}
+
 float Game::getMaterialDropChance() const {
     // Brotato's material drop formula:
     // Starts at 100%, decreases 1.5% per wave number, minimum 50%
@@ -329,6 +361,9 @@ void Game::render() {
     
     for (auto& material : materials) {
         material->render(renderer);
+    }
+    if (speedUpBooster) {
+        speedUpBooster->render(renderer);
     }
     
     renderUI();

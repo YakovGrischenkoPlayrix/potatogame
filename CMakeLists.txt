@@ -19,6 +19,7 @@ set(SOURCES
     src/Vector2.cpp
     src/ExperienceOrb.cpp
     src/Material.cpp
+    src/SpeedUpBooster.cpp
     src/Weapon.cpp
     src/Shop.cpp
 )
@@ -33,6 +34,7 @@ set(HEADERS
     src/Vector2.h
     src/ExperienceOrb.h
     src/Material.h
+    src/SpeedUpBooster.h
     src/Weapon.h
     src/Shop.h
 )

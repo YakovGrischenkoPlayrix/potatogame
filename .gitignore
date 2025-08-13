@@ -3,3 +3,6 @@
 build*/
 \# Ignore accidental Windows device-name file
 nul
+
+# Build directory
+build/

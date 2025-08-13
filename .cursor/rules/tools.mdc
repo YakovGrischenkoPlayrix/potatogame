@@ -1,0 +1,18 @@
+---
+alwaysApply: true
+---
+
+# Build game
+Go to the ./build directory. If it doesn't exist, create it.
+Configure the project 'cmake .. -DCMAKE_TOOLCHAIN_FILE=C:/W/vcpkg/scripts/buildsystems/vcpkg.cmake'
+Build the project 'cmake --build'
+
+# Rebuild game
+Remove ./build directory.
+Create the new ./build directory.
+Go to ./build directory.
+Configure the project 'cmake .. -DCMAKE_TOOLCHAIN_FILE=C:/W/vcpkg/scripts/buildsystems/vcpkg.cmake'
+Build the project 'cmake --build'
+
+# Run game
+Run ./build/Debug/BrotatoGame.exe
