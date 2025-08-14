@@ -768,7 +768,31 @@ void Game::checkMeleeAttacks() {
     // Check if player has any melee weapons that are currently attacking
     for (int i = 0; i < player->getWeaponCount(); i++) {
         const Weapon* weapon = player->getWeapon(i);
-        if (weapon && weapon->isMeleeWeapon() && weapon->isAttacking()) {
+        if (!weapon) continue;
+        // Вращающийся кирпич: постоянный контактный урон по орбите
+        if (weapon->isOrbitingWeapon()) {
+            Vector2 center = player->getPosition();
+            Vector2 brickPos = weapon->getOrbitingPosition(center);
+            float hitR = weapon->getOrbitingRadius();
+            int damage = weapon->calculateDamage(*player);
+            for (auto& enemy : enemies) {
+                if (!enemy->isAlive()) continue;
+                float d = brickPos.distance(enemy->getPosition());
+                if (d <= hitR + enemy->getRadius()) {
+                    enemy->hit();
+                    enemy->destroy();
+                    // опыт и материалы, как в ближнем бою
+                    experienceOrbs.push_back(std::make_unique<ExperienceOrb>(enemy->getPosition()));
+                    static std::random_device matRd;
+                    static std::mt19937 matGen(matRd());
+                    std::uniform_real_distribution<float> matChance(0.0f, 1.0f);
+                    if (matChance(matGen) < getMaterialDropChance()) {
+                        materials.push_back(std::make_unique<Material>(enemy->getPosition()));
+                    }
+                }
+            }
+        }
+        if (weapon->isMeleeWeapon() && weapon->isAttacking()) {
             // Only damage during the peak of the attack (when weapon is most extended)
             float attackProgress = weapon->getAttackProgress();
             if (attackProgress < 0.4f || attackProgress > 0.8f) {
