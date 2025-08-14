@@ -5,7 +5,9 @@
 enum class BulletType {
     PISTOL,
     SMG,
-    ENEMY_LOB
+    ENEMY_LOB,
+    SHOTGUN,
+    SNIPER
 };
 
 class Bullet {

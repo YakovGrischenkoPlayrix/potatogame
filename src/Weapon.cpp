@@ -22,6 +22,12 @@ Weapon::Weapon(WeaponType weaponType, WeaponTier weaponTier)
         case WeaponType::MELEE_STICK:
             initializeMeleeStickStats();
             break;
+        case WeaponType::SHOTGUN:
+            initializeShotgunStats();
+            break;
+        case WeaponType::SNIPER:
+            initializeSniperStats();
+            break;
         case WeaponType::ORBITING_BRICK:
             initializeOrbitingBrickStats();
             break;
@@ -63,6 +69,12 @@ void Weapon::loadWeaponTexture(SDL_Renderer* renderer) {
             break;
         case WeaponType::MELEE_STICK:
             texturePath = "assets/weapons/brickonstick.png";
+            break;
+        case WeaponType::SHOTGUN:
+            texturePath = "assets/weapons/shotgun.png";
+            break;
+        case WeaponType::SNIPER:
+            texturePath = "assets/weapons/sniper2.png";
             break;
         case WeaponType::ORBITING_BRICK:
             texturePath = "assets/character/brick.png"; // reuse small brick look
@@ -173,6 +185,63 @@ void Weapon::initializeMeleeStickStats() {
     stats.knockback = 25; // Strong knockback
     stats.rangedDamageScaling = 0.0f; // No ranged scaling
     stats.meleeDamageScaling = 1.0f; // Scales with melee damage
+}
+
+
+void Weapon::initializeShotgunStats() {
+    // Shotgun stats based on tier - fires 5 pellets with spread
+    switch (tier) {
+        case WeaponTier::TIER_1:
+            stats.baseDamage = 3; // Low damage per pellet
+            stats.attackSpeed = 1.5f; // Slower than pistol
+            break;
+        case WeaponTier::TIER_2:
+            stats.baseDamage = 4;
+            stats.attackSpeed = 1.4f;
+            break;
+        case WeaponTier::TIER_3:
+            stats.baseDamage = 5;
+            stats.attackSpeed = 1.3f;
+            break;
+        case WeaponTier::TIER_4:
+            stats.baseDamage = 6;
+            stats.attackSpeed = 1.2f;
+            break;
+    }
+    
+    stats.range = 300; // Medium range
+    stats.critChance = 0.03f; // Low crit chance per pellet
+    stats.critMultiplier = 1.8f; // Moderate crit multiplier
+    stats.knockback = 20; // Good knockback
+    stats.rangedDamageScaling = 1.0f;
+}
+
+void Weapon::initializeSniperStats() {
+    // Sniper rifle stats based on tier - high damage, slow fire rate
+    switch (tier) {
+        case WeaponTier::TIER_1:
+            stats.baseDamage = 25; // High damage
+            stats.attackSpeed = 2.0f; // 2 second reload
+            break;
+        case WeaponTier::TIER_2:
+            stats.baseDamage = 35;
+            stats.attackSpeed = 2.0f;
+            break;
+        case WeaponTier::TIER_3:
+            stats.baseDamage = 50;
+            stats.attackSpeed = 2.0f;
+            break;
+        case WeaponTier::TIER_4:
+            stats.baseDamage = 60;
+            stats.attackSpeed = 2.0f; // Keep same reload time for balance
+            break;
+    }
+    
+    stats.range = 600; // Long range
+    stats.critChance = 0.25f; // High crit chance
+    stats.critMultiplier = 3.0f; // High crit multiplier
+    stats.knockback = 35; // Strong knockback
+    stats.rangedDamageScaling = 1.0f;
 }
 
 
@@ -317,6 +386,33 @@ void Weapon::fire(const Vector2& weaponPos, const Vector2& direction,
     
     Vector2 fireDirection = direction;
     
+    // Handle special firing patterns for different weapon types
+    if (type == WeaponType::SHOTGUN) {
+        // Shotgun fires 5 pellets with spread
+        static std::random_device rd;
+        static std::mt19937 gen(rd());
+        std::uniform_real_distribution<float> spreadAngle(-0.2617f, 0.2617f); // ±15 degrees in radians
+        
+        int finalDamage = calculateDamage(player);
+        
+        // Fire 5 pellets
+        for (int i = 0; i < 5; i++) {
+            float baseAngle = atan2(direction.y, direction.x);
+            float pelletAngle = baseAngle + spreadAngle(gen);
+            Vector2 pelletDirection(cos(pelletAngle), sin(pelletAngle));
+            
+            // Check for critical hit for each pellet
+            std::uniform_real_distribution<float> critRoll(0.0f, 1.0f);
+            int pelletDamage = finalDamage;
+            if (critRoll(gen) < stats.critChance) {
+                pelletDamage = (int)(pelletDamage * stats.critMultiplier);
+            }
+            
+            bullets.push_back(std::make_unique<Bullet>(weaponPos, pelletDirection, pelletDamage, stats.range, 350.0f, BulletType::SHOTGUN));
+        }
+        return;
+    }
+    
     // Add inaccuracy for SMG
     if (type == WeaponType::SMG) {
         static std::random_device rd;
@@ -340,8 +436,24 @@ void Weapon::fire(const Vector2& weaponPos, const Vector2& direction,
     }
     
     // Create bullet with appropriate type from weapon position
-    BulletType bulletType = (type == WeaponType::SMG) ? BulletType::SMG : BulletType::PISTOL;
-    bullets.push_back(std::make_unique<Bullet>(weaponPos, fireDirection, finalDamage, stats.range, 400.0f, bulletType));
+    BulletType bulletType = BulletType::PISTOL; // Default
+    float bulletSpeed = 400.0f; // Default speed
+    
+    switch (type) {
+        case WeaponType::SMG:
+            bulletType = BulletType::SMG;
+            break;
+        case WeaponType::SNIPER:
+            bulletType = BulletType::SNIPER;
+            bulletSpeed = 600.0f; // Faster sniper bullets
+            break;
+        case WeaponType::PISTOL:
+        default:
+            bulletType = BulletType::PISTOL;
+            break;
+    }
+    
+    bullets.push_back(std::make_unique<Bullet>(weaponPos, fireDirection, finalDamage, stats.range, bulletSpeed, bulletType));
     
     // Special weapon effects
     if (type == WeaponType::PISTOL) {

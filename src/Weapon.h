@@ -13,6 +13,8 @@ enum class WeaponType {
     PISTOL,
     SMG,
     MELEE_STICK,
+    SHOTGUN,
+    SNIPER,
     ORBITING_BRICK
 };
 
@@ -84,7 +86,12 @@ protected:
     void initializePistolStats();
     void initializeSMGStats();
     void initializeMeleeStickStats();
+
+    void initializeShotgunStats();
+    void initializeSniperStats();
+
     void initializeOrbitingBrickStats();
+
     
     WeaponType type;
     WeaponTier tier;

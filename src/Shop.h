@@ -99,4 +99,6 @@ private:
     SDL_Texture* texReroll = nullptr;
     SDL_Texture* texWeaponPistol = nullptr;
     SDL_Texture* texWeaponSMG = nullptr;
+    SDL_Texture* texWeaponShotgun = nullptr;
+    SDL_Texture* texWeaponSniper = nullptr;
 };
