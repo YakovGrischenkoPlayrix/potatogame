@@ -171,9 +171,12 @@ void Player::levelUp() {
     } else if (level == 3 && weapons.size() < MAX_WEAPONS) {
         addWeapon(std::make_unique<Weapon>(WeaponType::SMG, WeaponTier::TIER_1));
         std::cout << "Got SMG!" << std::endl;
+    } else if (level == 4 && weapons.size() < MAX_WEAPONS) {
+        addWeapon(std::make_unique<Weapon>(WeaponType::SHOTGUN, WeaponTier::TIER_1));
+        std::cout << "Got Shotgun!" << std::endl;
     } else if (level == 5 && weapons.size() < MAX_WEAPONS) {
-        addWeapon(std::make_unique<Weapon>(WeaponType::PISTOL, WeaponTier::TIER_2));
-        std::cout << "Got Tier 2 Pistol!" << std::endl;
+        addWeapon(std::make_unique<Weapon>(WeaponType::SNIPER, WeaponTier::TIER_1));
+        std::cout << "Got Sniper Rifle!" << std::endl;
     }
     
     // In Brotato, upgrades are chosen by the player at wave end
