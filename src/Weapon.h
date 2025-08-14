@@ -1,6 +1,7 @@
 #pragma once
 #include <SDL2/SDL.h>
 #include <vector>
+#include <cmath>
 #include <memory>
 #include "Vector2.h"
 #include "Bullet.h"
@@ -13,7 +14,8 @@ enum class WeaponType {
     SMG,
     MELEE_STICK,
     SHOTGUN,
-    SNIPER
+    SNIPER,
+    ORBITING_BRICK
 };
 
 enum class WeaponTier {
@@ -68,9 +70,12 @@ public:
     
     // Melee weapon support
     bool isMeleeWeapon() const { return type == WeaponType::MELEE_STICK; }
+    bool isOrbitingWeapon() const { return type == WeaponType::ORBITING_BRICK; }
     bool isAttacking() const { return muzzleFlashTimer > 0.0f; } // Reuse muzzle flash timer for melee attack duration
     float getAttackProgress() const { return muzzleFlashTimer > 0.0f ? (0.3f - muzzleFlashTimer) / 0.3f : 0.0f; } // 0.0 = start, 1.0 = fully extended
     Vector2 getWeaponTipPosition(const Vector2& weaponPos, const Vector2& direction) const;
+    Vector2 getOrbitingPosition(const Vector2& playerPos) const;
+    float getOrbitingRadius() const;
     
 protected:
     virtual void fire(const Vector2& weaponPos, const Vector2& direction, 
@@ -81,8 +86,12 @@ protected:
     void initializePistolStats();
     void initializeSMGStats();
     void initializeMeleeStickStats();
+
     void initializeShotgunStats();
     void initializeSniperStats();
+
+    void initializeOrbitingBrickStats();
+
     
     WeaponType type;
     WeaponTier tier;
@@ -96,4 +105,30 @@ protected:
     // Sprite rendering
     SDL_Texture* weaponTexture;
     void loadWeaponTexture(SDL_Renderer* renderer);
+
+    // Orbiting weapon state
+    float orbitAngle = 0.0f;
+    float orbitRadius = 70.0f;
+    float orbitAngularSpeed = 2.5f; // radians/sec
+    float orbitHitRadius = 16.0f;
 };
+
+inline void Weapon::initializeOrbitingBrickStats() {
+    switch (tier) {
+        case WeaponTier::TIER_1: stats.baseDamage = 8; orbitRadius = 70.0f; orbitAngularSpeed = 2.5f; orbitHitRadius = 16.0f; break;
+        case WeaponTier::TIER_2: stats.baseDamage = 12; orbitRadius = 78.0f; orbitAngularSpeed = 2.8f; orbitHitRadius = 18.0f; break;
+        case WeaponTier::TIER_3: stats.baseDamage = 18; orbitRadius = 86.0f; orbitAngularSpeed = 3.1f; orbitHitRadius = 20.0f; break;
+        case WeaponTier::TIER_4: stats.baseDamage = 26; orbitRadius = 96.0f; orbitAngularSpeed = 3.4f; orbitHitRadius = 22.0f; break;
+    }
+    stats.attackSpeed = 0.0f; stats.range = orbitRadius; stats.critChance = 0.0f; stats.critMultiplier = 1.0f; stats.knockback = 20; stats.rangedDamageScaling = 0.0f; stats.meleeDamageScaling = 1.0f;
+}
+
+inline Vector2 Weapon::getOrbitingPosition(const Vector2& playerPos) const {
+    if (type != WeaponType::ORBITING_BRICK) return playerPos;
+    return playerPos + Vector2(cos(orbitAngle), sin(orbitAngle)) * orbitRadius;
+}
+
+inline float Weapon::getOrbitingRadius() const {
+    if (type != WeaponType::ORBITING_BRICK) return 0.0f;
+    return orbitHitRadius;
+}

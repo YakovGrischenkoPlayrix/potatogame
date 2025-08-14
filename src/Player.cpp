@@ -14,6 +14,8 @@ Player::Player(float x, float y)
     addWeapon(std::make_unique<Weapon>(WeaponType::MELEE_STICK, WeaponTier::TIER_1));
     // Also add a pistol for comparison
     addWeapon(std::make_unique<Weapon>(WeaponType::PISTOL, WeaponTier::TIER_1));
+    // Add orbiting brick weapon
+    addWeapon(std::make_unique<Weapon>(WeaponType::ORBITING_BRICK, WeaponTier::TIER_1));
 }
 
 void Player::initialize(SDL_Renderer* renderer) {
@@ -248,18 +250,19 @@ void Player::initializeWeapons(SDL_Renderer* renderer) {
 void Player::updateWeapons(float deltaTime, std::vector<std::unique_ptr<Bullet>>& bullets) {
     if (weapons.empty()) return;
     
-    // Calculate circular positioning for multiple weapons (same as renderWeapons)
+    // Calculate positioning for multiple weapons
     int numWeapons = weapons.size();
-    float radius = 50.0f; // Same radius as in renderWeapons
-    
+    float circleRadius = 50.0f;
     for (int i = 0; i < numWeapons; i++) {
-        // Calculate weapon position in circle around player (same logic as renderWeapons)
-        float angleOffset = (2.0f * M_PI * i) / numWeapons;
-        float positionAngle = angleOffset;
-        Vector2 offsetDirection(cos(positionAngle), sin(positionAngle));
-        Vector2 weaponPos = position + offsetDirection * radius;
-        
-        // Update weapon with its actual position
+        Vector2 weaponPos;
+        if (weapons[i]->isOrbitingWeapon()) {
+            weaponPos = weapons[i]->getOrbitingPosition(position);
+        } else {
+            float angleOffset = (2.0f * M_PI * i) / numWeapons;
+            float positionAngle = angleOffset;
+            Vector2 offsetDirection(cos(positionAngle), sin(positionAngle));
+            weaponPos = position + offsetDirection * circleRadius;
+        }
         weapons[i]->update(deltaTime, weaponPos, shootDirection, bullets, *this);
     }
 }
@@ -267,21 +270,20 @@ void Player::updateWeapons(float deltaTime, std::vector<std::unique_ptr<Bullet>>
 void Player::renderWeapons(SDL_Renderer* renderer) {
     if (weapons.empty()) return;
     
-    // Calculate circular positioning for multiple weapons
+    // Calculate positions and render
     int numWeapons = weapons.size();
-    float radius = 50.0f; // Increased distance from player center
-    
+    float circleRadius = 50.0f;
     for (int i = 0; i < numWeapons; i++) {
-        // Calculate weapon position in circle around player (position only)
-        float angleOffset = (2.0f * M_PI * i) / numWeapons;
-        float positionAngle = angleOffset; // Just spread positions around circle
-        Vector2 offsetDirection(cos(positionAngle), sin(positionAngle));
-        Vector2 weaponPos = position + offsetDirection * radius;
-        
-        // All weapons point toward mouse (same direction)
+        Vector2 weaponPos;
+        if (weapons[i]->isOrbitingWeapon()) {
+            weaponPos = weapons[i]->getOrbitingPosition(position);
+        } else {
+            float angleOffset = (2.0f * M_PI * i) / numWeapons;
+            float positionAngle = angleOffset;
+            Vector2 offsetDirection(cos(positionAngle), sin(positionAngle));
+            weaponPos = position + offsetDirection * circleRadius;
+        }
         Vector2 weaponDirection = shootDirection;
-        
-        // Render weapon at calculated position but pointing at mouse
         weapons[i]->render(renderer, weaponPos, weaponDirection);
     }
 }

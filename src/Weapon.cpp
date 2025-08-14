@@ -28,6 +28,9 @@ Weapon::Weapon(WeaponType weaponType, WeaponTier weaponTier)
         case WeaponType::SNIPER:
             initializeSniperStats();
             break;
+        case WeaponType::ORBITING_BRICK:
+            initializeOrbitingBrickStats();
+            break;
     }
 }
 
@@ -72,6 +75,9 @@ void Weapon::loadWeaponTexture(SDL_Renderer* renderer) {
             break;
         case WeaponType::SNIPER:
             texturePath = "assets/weapons/sniper2.png";
+            break;
+        case WeaponType::ORBITING_BRICK:
+            texturePath = "assets/character/brick.png"; // reuse small brick look
             break;
         default:
             texturePath = "assets/weapons/pistol.png";
@@ -181,6 +187,7 @@ void Weapon::initializeMeleeStickStats() {
     stats.meleeDamageScaling = 1.0f; // Scales with melee damage
 }
 
+
 void Weapon::initializeShotgunStats() {
     // Shotgun stats based on tier - fires 5 pellets with spread
     switch (tier) {
@@ -237,12 +244,20 @@ void Weapon::initializeSniperStats() {
     stats.rangedDamageScaling = 1.0f;
 }
 
+
 void Weapon::update(float deltaTime, const Vector2& weaponPos, 
                    const Vector2& aimDirection,
                    std::vector<std::unique_ptr<Bullet>>& bullets,
                    const Player& player) {
     timeSinceLastShot += deltaTime;
     muzzleFlashTimer = std::max(0.0f, muzzleFlashTimer - deltaTime);
+
+    // Orbiting weapons: обновляем угол и не пытаемся стрелять
+    if (type == WeaponType::ORBITING_BRICK) {
+        orbitAngle += orbitAngularSpeed * deltaTime;
+        if (orbitAngle > 2.0f * 3.1415926f) orbitAngle -= 2.0f * 3.1415926f;
+        return;
+    }
 
     // Effective fire interval accounts for player's attackSpeed stat and temporary fire-rate boosts
     float effectiveMultiplier = player.getStats().attackSpeed * player.getFireRateMultiplier();
@@ -259,6 +274,15 @@ void Weapon::update(float deltaTime, const Vector2& weaponPos,
 }
 
 void Weapon::render(SDL_Renderer* renderer, const Vector2& weaponPos, const Vector2& weaponDirection) {
+    if (type == WeaponType::ORBITING_BRICK) {
+        // Рисуем небольшой кирпич по орбите (как квадрат)
+        Vector2 pos = weaponPos; // фактическая позиция уже передана как орбитальная
+        SDL_SetRenderDrawColor(renderer, 160, 82, 45, 255);
+        int s = (int)orbitHitRadius; // размер квадрата
+        SDL_Rect r{(int)(pos.x - s/2), (int)(pos.y - s/2), s, s};
+        SDL_RenderFillRect(renderer, &r);
+        return;
+    }
     // Special rendering for melee weapons
     if (type == WeaponType::MELEE_STICK) {
         // Show weapon extending and retracting
@@ -473,3 +497,5 @@ Vector2 Weapon::getWeaponTipPosition(const Vector2& weaponPos, const Vector2& di
         return weaponPos + direction * (stats.range * retraction);
     }
 }
+
+// orbiting helpers are defined inline in header
