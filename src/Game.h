@@ -11,6 +11,7 @@
 #include "Weapon.h"
 #include "Shop.h"
 #include "SpeedUpBooster.h"
+#include "HealingBooster.h"
 
 // Forward declarations
 class SlimeEnemy;
@@ -98,7 +99,9 @@ private:
     std::vector<std::unique_ptr<ExperienceOrb>> experienceOrbs;
     std::vector<std::unique_ptr<Material>> materials;
     std::unique_ptr<SpeedUpBooster> speedUpBooster; // at most one
+    std::unique_ptr<HealingBooster> healingBooster; // at most one
     float boosterSpawnTimer = 0.0f; // spawns every 10 seconds
+    float healingBoosterSpawnTimer = 0.0f; // spawns every 15 seconds
     
     float timeSinceLastSpawn;
     int score;

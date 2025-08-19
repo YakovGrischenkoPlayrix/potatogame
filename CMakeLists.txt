@@ -20,6 +20,7 @@ set(SOURCES
     src/ExperienceOrb.cpp
     src/Material.cpp
     src/SpeedUpBooster.cpp
+    src/HealingBooster.cpp
     src/Weapon.cpp
     src/Shop.cpp
     src/BossEnemy.cpp
@@ -39,6 +40,7 @@ set(HEADERS
     src/ExperienceOrb.h
     src/Material.h
     src/SpeedUpBooster.h
+    src/HealingBooster.h
     src/Weapon.h
     src/Shop.h
     src/BossEnemy.h

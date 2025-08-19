@@ -76,6 +76,9 @@ public:
     void applyFireRateBoost(float multiplier, float durationSeconds);
     float getFireRateMultiplier() const { return fireRateMultiplier; }
     
+    // Healing
+    void heal(int amount);
+    
 private:
     Vector2 position;
     Vector2 velocity;

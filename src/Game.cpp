@@ -237,6 +237,25 @@ void Game::update(float deltaTime) {
         }
     }
     
+    // Handle healing booster lifetime and periodic spawn (at most one)
+    healingBoosterSpawnTimer += deltaTime;
+    if (!healingBooster && healingBoosterSpawnTimer >= 15.0f) {
+        healingBoosterSpawnTimer = 0.0f;
+        static std::random_device rd;
+        static std::mt19937 gen(rd());
+        std::uniform_real_distribution<float> xdist(50.0f, static_cast<float>(WINDOW_WIDTH - 50));
+        std::uniform_real_distribution<float> ydist(50.0f, static_cast<float>(WINDOW_HEIGHT - 50));
+        Vector2 spawnPos(xdist(gen), ydist(gen));
+        healingBooster = std::make_unique<HealingBooster>(spawnPos);
+        healingBooster->initialize(renderer);
+    }
+    if (healingBooster) {
+        healingBooster->update(deltaTime);
+        if (!healingBooster->isAlive()) {
+            healingBooster.reset();
+        }
+    }
+    
     spawnEnemies();
     checkCollisions();
     checkMeleeAttacks();
@@ -327,14 +346,28 @@ void Game::updateMaterialCollection() {
 }
 
 void Game::updateBoosterCollection() {
-    if (!speedUpBooster || !speedUpBooster->isAlive()) return;
-    Vector2 playerPos = player->getPosition();
-    float pickupRange = player->getStats().pickupRange;
-    float distance = playerPos.distance(speedUpBooster->getPosition());
-    if (distance <= pickupRange + speedUpBooster->getRadius()) {
-        // Apply 5x fire rate for 5 seconds
-        player->applyFireRateBoost(5.0f, 5.0f);
-        speedUpBooster->collect();
+    // Check SpeedUpBooster collection
+    if (speedUpBooster && speedUpBooster->isAlive()) {
+        Vector2 playerPos = player->getPosition();
+        float pickupRange = player->getStats().pickupRange;
+        float distance = playerPos.distance(speedUpBooster->getPosition());
+        if (distance <= pickupRange + speedUpBooster->getRadius()) {
+            // Apply 5x fire rate for 5 seconds
+            player->applyFireRateBoost(5.0f, 5.0f);
+            speedUpBooster->collect();
+        }
+    }
+    
+    // Check HealingBooster collection
+    if (healingBooster && healingBooster->isAlive()) {
+        Vector2 playerPos = player->getPosition();
+        float pickupRange = player->getStats().pickupRange;
+        float distance = playerPos.distance(healingBooster->getPosition());
+        if (distance <= pickupRange + healingBooster->getRadius()) {
+            // Heal player by 50 HP
+            player->heal(50);
+            healingBooster->collect();
+        }
     }
 }
 
@@ -385,6 +418,9 @@ void Game::render() {
     }
     if (speedUpBooster) {
         speedUpBooster->render(renderer);
+    }
+    if (healingBooster) {
+        healingBooster->render(renderer);
     }
     
     renderUI();

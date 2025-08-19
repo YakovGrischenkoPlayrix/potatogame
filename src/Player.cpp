@@ -212,6 +212,13 @@ void Player::takeDamage(int damage) {
     if (health < 0) health = 0;
 }
 
+void Player::heal(int amount) {
+    health += amount;
+    if (health > stats.maxHealth) {
+        health = stats.maxHealth;
+    }
+}
+
 bool Player::canShoot() const {
     // Apply both player attackSpeed stat and temporary fireRateMultiplier
     float effectiveAttackSpeed = stats.attackSpeed * fireRateMultiplier;
