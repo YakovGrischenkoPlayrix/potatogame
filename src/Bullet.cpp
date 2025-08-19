@@ -1,9 +1,9 @@
 #include "Bullet.h"
 
-Bullet::Bullet(Vector2 pos, Vector2 dir, int dmg, float range, float speed, BulletType type, bool enemyOwnedFlag) 
+Bullet::Bullet(Vector2 pos, Vector2 dir, int dmg, float range, float speed, BulletType type, bool enemyOwnedFlag, SDL_Color color) 
     : position(pos), startPosition(pos), direction(dir.normalized()), 
       speed(speed), radius(7), maxRange(range), damage(dmg), alive(true), bulletType(type),
-      velocity(dir.normalized() * speed), gravity(550.0f), enemyOwned(enemyOwnedFlag) {
+      velocity(dir.normalized() * speed), gravity(550.0f), enemyOwned(enemyOwnedFlag), bulletColor(color) {
 }
 
 void Bullet::update(float deltaTime) {
@@ -34,6 +34,8 @@ void Bullet::render(SDL_Renderer* renderer) {
     // Color based on bullet type and ownership
     if (bulletType == BulletType::BOSS_BULLET) {
         SDL_SetRenderDrawColor(renderer, 255, 140, 0, 255); // Orange for boss bullets
+    } else if (bulletType == BulletType::CENTIPEDE_BULLET) {
+        SDL_SetRenderDrawColor(renderer, bulletColor.r, bulletColor.g, bulletColor.b, bulletColor.a); // Custom color for centipede bullets
     } else if (enemyOwned) {
         SDL_SetRenderDrawColor(renderer, 255, 50, 50, 255); // Red for enemy bullets
     } else {

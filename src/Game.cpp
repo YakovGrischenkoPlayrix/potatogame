@@ -2,6 +2,7 @@
 #include "SlimeEnemy.h"
 #include "PebblinEnemy.h"
 #include "BossEnemy.h"
+#include "CentipedeEnemy.h"
 #include <cmath>
 #include <iostream>
 #include <random>
@@ -701,7 +702,7 @@ void Game::spawnEnemies() {
     if (wave >= 2 && !bossSpawnedThisWave && !currentBoss) {
         // Спавн босса в центре экрана
         Vector2 bossSpawnPos(WINDOW_WIDTH/2, 100); // Сверху по центру
-        currentBoss = CreateBossEnemy(bossSpawnPos, renderer);
+        currentBoss = CreateCentipedeEnemy(bossSpawnPos, renderer);
         bossSpawnedThisWave = true;
         std::cout << "Boss spawned at wave " << wave << "!" << std::endl;
         return; // Не спавним обычных врагов в момент спавна босса
@@ -777,7 +778,7 @@ void Game::updateSpawnIndicators(float deltaTime) {
                 case EnemySpawnType::BOSS:
                     // Спавн босса только если его еще нет
                     if (!currentBoss && !bossSpawnedThisWave) {
-                        currentBoss = CreateBossEnemy(indicator.position, renderer);
+                        currentBoss = CreateCentipedeEnemy(indicator.position, renderer);
                         bossSpawnedThisWave = true;
                         std::cout << "Boss spawned via indicator!" << std::endl;
                     }
