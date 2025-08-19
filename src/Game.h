@@ -11,17 +11,22 @@
 #include "Weapon.h"
 #include "Shop.h"
 #include "SpeedUpBooster.h"
+#include "HealingBooster.h"
 
 // Forward declarations
 class SlimeEnemy;
 class PebblinEnemy;
 class BossEnemy;
 
+class FractalBoss;
+
+
 enum class EnemySpawnType {
     BASE,
     SLIME,
     PEBBLIN,
-    BOSS
+    BOSS,
+    MINIBOSS
 };
 
 struct SpawnIndicator {
@@ -67,6 +72,10 @@ private:
     float getMaterialDropChance() const;
     void renderUI();
     
+    // Boss spawning helpers
+    bool shouldSpawnFractalBoss() const;
+    
+private:
     SDL_Window* window;
     SDL_Renderer* renderer;
     bool running;
@@ -78,11 +87,24 @@ private:
     // Босс система - только один босс за волну
     std::unique_ptr<Enemy> currentBoss;
     bool bossSpawnedThisWave;
+    bool swarmSpawnedThisWave;
+    
+    // Система предотвращения повторения боссов подряд
+    enum class BossType {
+        NONE,
+        REGULAR,
+        FRACTAL
+    };
+    BossType lastBossType;
+    
+
     std::vector<SpawnIndicator> spawnIndicators;
     std::vector<std::unique_ptr<ExperienceOrb>> experienceOrbs;
     std::vector<std::unique_ptr<Material>> materials;
     std::unique_ptr<SpeedUpBooster> speedUpBooster; // at most one
+    std::unique_ptr<HealingBooster> healingBooster; // at most one
     float boosterSpawnTimer = 0.0f; // spawns every 10 seconds
+    float healingBoosterSpawnTimer = 0.0f; // spawns every 15 seconds
     
     float timeSinceLastSpawn;
     int score;

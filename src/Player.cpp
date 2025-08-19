@@ -5,10 +5,11 @@
 
 Player::Player(float x, float y) 
     : position(x, y), velocity(0, 0), shootDirection(1, 0), 
-      radius(20), health(100), shootCooldown(0.15f), timeSinceLastShot(0),
-      experience(0), level(1), healthRegenTimer(0), playerTexture(nullptr) {
+      radius(20), health(100), shield(100), shootCooldown(0.15f), timeSinceLastShot(0),
+      experience(0), level(1), healthRegenTimer(0), healthRegenAccumulator(0.0f), playerTexture(nullptr) {
     // Initialize health to match max health
     health = stats.maxHealth;
+    shield = stats.maxShield; // Инициализируем щит
     
     // Start with a brick on stick melee weapon for testing
     addWeapon(std::make_unique<Weapon>(WeaponType::MELEE_STICK, WeaponTier::TIER_1));
@@ -61,8 +62,21 @@ void Player::update(float deltaTime) {
     if (stats.healthRegen > 0) {
         healthRegenTimer += deltaTime;
         if (healthRegenTimer >= 1.0f) { // Regen every second
-            health += (int)stats.healthRegen;
-            if (health > stats.maxHealth) health = stats.maxHealth;
+            // Add health regeneration to accumulator
+            healthRegenAccumulator += stats.healthRegen;
+            
+            // Apply whole HP points and keep fractional part
+            int healthToAdd = (int)healthRegenAccumulator;
+            if (healthToAdd > 0) {
+                health += healthToAdd;
+                if (health > stats.maxHealth) health = stats.maxHealth;
+                healthRegenAccumulator -= healthToAdd; // Keep fractional part
+                
+
+                
+
+            }
+            
             healthRegenTimer = 0.0f;
         }
     }
@@ -208,8 +222,41 @@ void Player::takeDamage(int damage) {
         }
     }
     
-    health -= actualDamage;
-    if (health < 0) health = 0;
+    // First damage goes to shield, then to health
+    if (shield > 0) {
+        if (shield >= actualDamage) {
+            shield -= actualDamage;
+            actualDamage = 0;
+        } else {
+            actualDamage -= shield;
+            shield = 0;
+        }
+    }
+    
+    // Remaining damage goes to health
+    if (actualDamage > 0) {
+        health -= actualDamage;
+        if (health < 0) health = 0;
+    }
+}
+
+void Player::heal(int amount) {
+    health += amount;
+    if (health > stats.maxHealth) {
+        health = stats.maxHealth;
+    }
+}
+
+void Player::takeShieldDamage(int damage) {
+    shield -= damage;
+    if (shield < 0) shield = 0;
+}
+
+void Player::restoreShield(int amount) {
+    shield += amount;
+    if (shield > stats.maxShield) {
+        shield = stats.maxShield;
+    }
 }
 
 bool Player::canShoot() const {

@@ -6,7 +6,8 @@
 
 BossEnemy::BossEnemy(Vector2 pos, SDL_Renderer* renderer)
     : Enemy(pos, renderer), fireCooldown(1.5f), timeSinceLastShot(0.0f),
-      movementTimer(0.0f), isSprintPhase(false), bossTexture(nullptr), bossRushTexture(nullptr), facingRight(false), maxHealth(8000) {
+      movementTimer(0.0f), isSprintPhase(false), bossTexture(nullptr), bossRushTexture(nullptr), facingRight(false), maxHealth(500) {
+
     
     // Босс характеристики - супер танковый
     speed = 68.0f;          // На 15% медленнее базового (80 * 0.85 = 68)
@@ -14,7 +15,7 @@ BossEnemy::BossEnemy(Vector2 pos, SDL_Renderer* renderer)
     sprintSpeed = 160.0f;   // Спринт - в 2 раза быстрее базового
     radius = 60.0f;         // В 2 раза больше радиус (30 -> 60)
     damage = 15;            // Больше урона
-    health = 8000;          // В 200 раз больше здоровья чем у базового (160 * 50 = 8000)
+    health = 1000;          // В 200 раз больше здоровья чем у базового (160 * 50 = 500)
     
     // Размеры спрайта - в 3.1 раза больше (еще +20%)
     spriteWidth = 200;      // Базовый 64 * 2 * 1.3 * 1.2 ≈ 200

@@ -14,6 +14,9 @@ public:
     void update(float deltaTime, Vector2 playerPos, std::vector<std::unique_ptr<Bullet>>& bullets) override;
     void render(SDL_Renderer* renderer) override;
     int getMaxHealth() const override;
+    bool isBossUnit() const override { return true; }
+    bool isLeader() const override { return false; }
+
     
 private:
     void loadSprites(SDL_Renderer* renderer);
