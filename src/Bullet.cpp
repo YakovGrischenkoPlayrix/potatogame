@@ -32,18 +32,41 @@ void Bullet::render(SDL_Renderer* renderer) {
     if (!alive) return;
     
     // Color based on bullet type and ownership
-    if (bulletType == BulletType::BOSS_BULLET) {
-        SDL_SetRenderDrawColor(renderer, 255, 140, 0, 255); // Orange for boss bullets
-    } else if (bulletType == BulletType::FRACTAL_CENTER) {
-        SDL_SetRenderDrawColor(renderer, 50, 200, 50, 255); // Bright green for fractal center
-    } else if (bulletType == BulletType::FRACTAL_LEVEL1) {
-        SDL_SetRenderDrawColor(renderer, 80, 160, 80, 255); // Medium green for fractal level 1
-    } else if (bulletType == BulletType::FRACTAL_LEVEL2) {
-        SDL_SetRenderDrawColor(renderer, 120, 180, 120, 255); // Light green for fractal level 2
-    } else if (enemyOwned) {
-        SDL_SetRenderDrawColor(renderer, 255, 50, 50, 255); // Red for enemy bullets
-    } else {
-        SDL_SetRenderDrawColor(renderer, 255, 255, 0, 255); // Yellow for player bullets
+    switch (bulletType) {
+        case BulletType::BOSS_BULLET:
+            SDL_SetRenderDrawColor(renderer, 255, 140, 0, 255); // Orange for boss bullets
+            break;
+        case BulletType::MINIBOSS_1:
+            SDL_SetRenderDrawColor(renderer, 255, 60, 60, 255); // Red
+            break;
+        case BulletType::MINIBOSS_2:
+            SDL_SetRenderDrawColor(renderer, 60, 255, 60, 255); // Green
+            break;
+        case BulletType::MINIBOSS_3:
+            SDL_SetRenderDrawColor(renderer, 60, 120, 255, 255); // Blue
+            break;
+        case BulletType::MINIBOSS_4:
+            SDL_SetRenderDrawColor(renderer, 60, 255, 255, 255); // Cyan
+            break;
+        case BulletType::MINIBOSS_5:
+            SDL_SetRenderDrawColor(renderer, 200, 60, 255, 255); // Magenta
+            break;
+        case BulletType::FRACTAL_CENTER:
+            SDL_SetRenderDrawColor(renderer, 255, 100, 100, 255); // Red for fractal center
+            break;
+        case BulletType::FRACTAL_LEVEL1:
+            SDL_SetRenderDrawColor(renderer, 100, 255, 100, 255); // Green for fractal level 1
+            break;
+        case BulletType::FRACTAL_LEVEL2:
+            SDL_SetRenderDrawColor(renderer, 100, 100, 255, 255); // Blue for fractal level 2
+            break;
+        default:
+            if (enemyOwned) {
+                SDL_SetRenderDrawColor(renderer, 255, 50, 50, 255); // Red for enemy bullets
+            } else {
+                SDL_SetRenderDrawColor(renderer, 255, 255, 0, 255); // Yellow for player bullets
+            }
+            break;
     }
     
     int centerX = (int)position.x;

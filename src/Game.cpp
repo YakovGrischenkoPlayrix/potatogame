@@ -2,6 +2,7 @@
 #include "SlimeEnemy.h"
 #include "PebblinEnemy.h"
 #include "BossEnemy.h"
+#include "MiniBossEnemy.h"
 #include "FractalBoss.h"
 #include <cmath>
 #include <iostream>
@@ -17,8 +18,8 @@
 Game::Game() : window(nullptr), renderer(nullptr), running(false), 
                timeSinceLastSpawn(0), score(0), wave(1), mousePos(0, 0),
                waveTimer(0), waveDuration(10.0f), waveActive(true), materialBag(0),
-               currentBoss(nullptr), bossSpawnedThisWave(false),
-               defaultFont(nullptr) {
+               currentBoss(nullptr), bossSpawnedThisWave(false), swarmSpawnedThisWave(false),
+               lastBossType(BossType::NONE), defaultFont(nullptr) {
 }
 
 Game::~Game() {
@@ -173,6 +174,9 @@ void Game::update(float deltaTime) {
             wave++;
             waveTimer = 0;
             bossSpawnedThisWave = false; // Сброс флага босса для новой волны
+            swarmSpawnedThisWave = false;
+            // Сброс типа последнего босса для новой волны (позволяет случайный выбор)
+            lastBossType = BossType::NONE;
             std::cout << "Wave " << wave << " will start after shop" << std::endl;
             
             // Increase wave duration by 2.5 seconds each wave, capped at 30 seconds
@@ -230,6 +234,25 @@ void Game::update(float deltaTime) {
         speedUpBooster->update(deltaTime);
         if (!speedUpBooster->isAlive()) {
             speedUpBooster.reset();
+        }
+    }
+    
+    // Handle healing booster lifetime and periodic spawn (at most one)
+    healingBoosterSpawnTimer += deltaTime;
+    if (!healingBooster && healingBoosterSpawnTimer >= 15.0f) {
+        healingBoosterSpawnTimer = 0.0f;
+        static std::random_device rd;
+        static std::mt19937 gen(rd());
+        std::uniform_real_distribution<float> xdist(50.0f, static_cast<float>(WINDOW_WIDTH - 50));
+        std::uniform_real_distribution<float> ydist(50.0f, static_cast<float>(WINDOW_HEIGHT - 50));
+        Vector2 spawnPos(xdist(gen), ydist(gen));
+        healingBooster = std::make_unique<HealingBooster>(spawnPos);
+        healingBooster->initialize(renderer);
+    }
+    if (healingBooster) {
+        healingBooster->update(deltaTime);
+        if (!healingBooster->isAlive()) {
+            healingBooster.reset();
         }
     }
     
@@ -323,14 +346,28 @@ void Game::updateMaterialCollection() {
 }
 
 void Game::updateBoosterCollection() {
-    if (!speedUpBooster || !speedUpBooster->isAlive()) return;
-    Vector2 playerPos = player->getPosition();
-    float pickupRange = player->getStats().pickupRange;
-    float distance = playerPos.distance(speedUpBooster->getPosition());
-    if (distance <= pickupRange + speedUpBooster->getRadius()) {
-        // Apply 5x fire rate for 5 seconds
-        player->applyFireRateBoost(5.0f, 5.0f);
-        speedUpBooster->collect();
+    // Check SpeedUpBooster collection
+    if (speedUpBooster && speedUpBooster->isAlive()) {
+        Vector2 playerPos = player->getPosition();
+        float pickupRange = player->getStats().pickupRange;
+        float distance = playerPos.distance(speedUpBooster->getPosition());
+        if (distance <= pickupRange + speedUpBooster->getRadius()) {
+            // Apply 5x fire rate for 5 seconds
+            player->applyFireRateBoost(5.0f, 5.0f);
+            speedUpBooster->collect();
+        }
+    }
+    
+    // Check HealingBooster collection
+    if (healingBooster && healingBooster->isAlive()) {
+        Vector2 playerPos = player->getPosition();
+        float pickupRange = player->getStats().pickupRange;
+        float distance = playerPos.distance(healingBooster->getPosition());
+        if (distance <= pickupRange + healingBooster->getRadius()) {
+            // Heal player by 50 HP
+            player->heal(50);
+            healingBooster->collect();
+        }
     }
 }
 
@@ -381,6 +418,9 @@ void Game::render() {
     }
     if (speedUpBooster) {
         speedUpBooster->render(renderer);
+    }
+    if (healingBooster) {
+        healingBooster->render(renderer);
     }
     
     renderUI();
@@ -528,6 +568,43 @@ void Game::renderUI() {
             renderNumber(bossHealth, bossBarX + bossBarWidth/2 - 20, bossBarY - 2, 1);
             renderText("/", bossBarX + bossBarWidth/2, bossBarY - 2, 1);
             renderNumber(bossMaxHealth, bossBarX + bossBarWidth/2 + 15, bossBarY - 2, 1);
+        }
+    }
+
+    // Swarm leader health bar (if exists)
+    {
+        int leaderHealth = 0;
+        int leaderMax = 0;
+        for (const auto& e : enemies) {
+            if (e->isAlive() && e->isBossUnit() && e->isLeader()) {
+                leaderHealth = e->getHealth();
+                leaderMax = e->getMaxHealth();
+                break;
+            }
+        }
+        if (leaderMax > 0) {
+            int barWidth = 700;
+            int barHeight = 14;
+            int barX = (WINDOW_WIDTH/2 - barWidth/2) - 240;
+            int barY = 95; // ниже полоски босса
+
+            SDL_SetRenderDrawColor(renderer, 60, 0, 60, 255);
+            SDL_Rect bg = {barX, barY, barWidth, barHeight};
+            SDL_RenderFillRect(renderer, &bg);
+
+            SDL_SetRenderDrawColor(renderer, 200, 60, 255, 255); // цвет лидера (магентовый)
+            int w = (leaderHealth * barWidth) / leaderMax;
+            SDL_Rect fg = {barX, barY, w, barHeight};
+            SDL_RenderFillRect(renderer, &fg);
+
+            SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
+            SDL_RenderDrawRect(renderer, &bg);
+
+            if (defaultFont) {
+                SDL_Color txt = {255, 255, 255, 255};
+                std::string t = "SWARM LEADER: " + std::to_string(leaderHealth) + " / " + std::to_string(leaderMax);
+                renderTTFText(t.c_str(), barX + barWidth/2 - 100, barY - 2, txt, 14);
+            }
         }
     }
     
@@ -698,27 +775,58 @@ void Game::renderTTFText(const char* text, int x, int y, SDL_Color color, int fo
 }
 
 void Game::spawnEnemies() {
-    // Проверка спавна босса каждую волну (начиная с 2-й)
-    if (wave >= 2 && !bossSpawnedThisWave && !currentBoss) {
-        Vector2 bossSpawnPos(WINDOW_WIDTH/2, 100); // Сверху по центру
-        
-        // Случайный выбор типа босса
-        bool spawnFractalBoss = shouldSpawnFractalBoss();
-        
-        if (spawnFractalBoss) {
-            currentBoss = CreateFractalBoss(bossSpawnPos, renderer);
-            std::cout << "Fractal Boss spawned randomly at wave " << wave << "!" << std::endl;
-        } else {
-            currentBoss = CreateBossEnemy(bossSpawnPos, renderer);
-            std::cout << "Regular Boss spawned randomly at wave " << wave << "!" << std::endl;
+    // Волны >= 2: одновременно управляем большим боссом (случайный тип) и роем минибоссов
+    if (wave >= 2) {
+        bool anyBossUnitAlive = (currentBoss && currentBoss->isAlive());
+        if (!anyBossUnitAlive) {
+            for (const auto& e : enemies) {
+                if (e->isAlive() && e->isBossUnit()) { anyBossUnitAlive = true; break; }
+            }
         }
-        
-        bossSpawnedThisWave = true;
-        return; // Не спавним обычных врагов в момент спавна босса
+
+        // Спавн большого босса один раз на волну, если ещё не существует
+        if (!bossSpawnedThisWave && !currentBoss) {
+            Vector2 bossSpawnPos(WINDOW_WIDTH/2, 120);
+            bool spawnFractalBoss = shouldSpawnFractalBoss();
+            if (spawnFractalBoss) {
+                currentBoss = CreateFractalBoss(bossSpawnPos, renderer);
+                lastBossType = BossType::FRACTAL;
+                std::cout << "Fractal Boss spawned at wave " << wave << " (preventing repeat of regular boss)!" << std::endl;
+            } else {
+                currentBoss = CreateBossEnemy(bossSpawnPos, renderer);
+                lastBossType = BossType::REGULAR;
+                std::cout << "Regular Boss spawned at wave " << wave << " (preventing repeat of fractal boss)!" << std::endl;
+            }
+            bossSpawnedThisWave = true;
+        }
+
+        // Спавн роя минибоссов один раз на волну
+        if (!swarmSpawnedThisWave) {
+            Vector2 center(WINDOW_WIDTH/2, 360);
+            float ringRadius = 150.0f;
+            std::vector<Vector2> spawnPositions;
+            for (int i = 0; i < 4; ++i) {
+                float angle = (float)i * 3.1415926f * 0.5f;
+                spawnPositions.emplace_back(center.x + ringRadius * cosf(angle), center.y + ringRadius * sinf(angle));
+            }
+            spawnPositions.emplace_back(center); // лидер
+
+            float telegraphDuration = spawnTelegraphSeconds;
+            for (int i = 0; i < 5; ++i) {
+                spawnIndicators.emplace_back(spawnPositions[i], telegraphDuration, EnemySpawnType::MINIBOSS);
+            }
+            swarmSpawnedThisWave = true;
+            std::cout << "Swarm indicators queued!" << std::endl;
+        }
     }
     
-    // Если босс жив - снижаем спавн обычных врагов
+    // Если жив любой босс-юнит (большой босс или минибоссы) - снижаем спавн обычных врагов
     bool bossAlive = (currentBoss && currentBoss->isAlive());
+    if (!bossAlive) {
+        for (const auto& e : enemies) {
+            if (e->isAlive() && e->isBossUnit()) { bossAlive = true; break; }
+        }
+    }
     
     timeSinceLastSpawn += 0.016f;
     
@@ -785,28 +893,44 @@ void Game::updateSpawnIndicators(float deltaTime) {
                     enemies.push_back(CreatePebblinEnemy(indicator.position, renderer));
                     break;
                 case EnemySpawnType::BOSS:
-                    // Спавн босса только если его еще нет
                     if (!currentBoss && !bossSpawnedThisWave) {
-                        // Случайный выбор типа босса
                         bool spawnFractalBoss = shouldSpawnFractalBoss();
-                        
                         if (spawnFractalBoss) {
                             currentBoss = CreateFractalBoss(indicator.position, renderer);
-                            std::cout << "Fractal Boss spawned randomly via indicator!" << std::endl;
+                            lastBossType = BossType::FRACTAL;
+                            std::cout << "Fractal Boss spawned via indicator (preventing repeat of regular boss)!" << std::endl;
                         } else {
                             currentBoss = CreateBossEnemy(indicator.position, renderer);
-                            std::cout << "Regular Boss spawned randomly via indicator!" << std::endl;
+                            lastBossType = BossType::REGULAR;
+                            std::cout << "Regular Boss spawned via indicator (preventing repeat of fractal boss)!" << std::endl;
                         }
-                        
                         bossSpawnedThisWave = true;
                     }
                     break;
-                case EnemySpawnType::FRACTAL_BOSS:
-                    // Прямой спавн фрактального босса (если нужен)
-                    if (!currentBoss && !bossSpawnedThisWave) {
-                        currentBoss = CreateFractalBoss(indicator.position, renderer);
-                        bossSpawnedThisWave = true;
-                        std::cout << "Fractal Boss spawned directly via indicator!" << std::endl;
+                case EnemySpawnType::MINIBOSS:
+                    // Индикаторы MINIBOSS создаются пачкой в spawnEnemies(),
+                    // здесь мы создаем конкретных минибоссов. Вариант и лидерство
+                    // определим по близости к центру (грубый хак без хранения индекса).
+                    // В реальной игре лучше пронести метаданные. Здесь: центр окна — лидер.
+                    {
+                        Vector2 center(WINDOW_WIDTH/2, 360);
+                        float d = indicator.position.distance(center);
+                        bool isLeader = (d < 10.0f);
+                        int variantIndex = 1;
+                        if (!isLeader) {
+                            // Определим квадрант по углу
+                            Vector2 v = indicator.position - center;
+                            float a = atan2f(v.y, v.x);
+                            if (a < 0) a += 2.0f * 3.1415926f;
+                            // 4 сегмента по 90 градусов → варианты 1..4
+                            variantIndex = 1 + (int)floorf(a / (0.5f * 3.1415926f));
+                            if (variantIndex < 1) variantIndex = 1;
+                            if (variantIndex > 4) variantIndex = 4;
+                        } else {
+                            variantIndex = 5;
+                        }
+                        extern std::unique_ptr<Enemy> CreateMiniBossEnemy(const Vector2& pos, SDL_Renderer* renderer, int variantIndex, bool isLeader);
+                        enemies.push_back(CreateMiniBossEnemy(indicator.position, renderer, variantIndex, isLeader));
                     }
                     break;
                 case EnemySpawnType::BASE:
@@ -999,6 +1123,17 @@ bool Game::shouldSpawnFractalBoss() const {
     static std::random_device rd;
     static std::mt19937 gen(rd());
     
+    // Если в прошлый раз был фрактальный босс, то сейчас должен быть обычный
+    if (lastBossType == BossType::FRACTAL) {
+        return false;
+    }
+    
+    // Если в прошлый раз был обычный босс, то сейчас должен быть фрактальный
+    if (lastBossType == BossType::REGULAR) {
+        return true;
+    }
+    
+    // Если это первый босс (lastBossType == NONE), используем случайный выбор
     // Вероятность фрактального босса увеличивается с волнами
     // Волна 2-3: 20% фрактального, 80% обычного
     // Волна 4-5: 40% фрактального, 60% обычного  

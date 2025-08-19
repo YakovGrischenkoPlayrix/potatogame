@@ -19,10 +19,13 @@ set(SOURCES
     src/Vector2.cpp
     src/ExperienceOrb.cpp
     src/Material.cpp
+    src/Booster.cpp
     src/SpeedUpBooster.cpp
+    src/HealingBooster.cpp
     src/Weapon.cpp
     src/Shop.cpp
     src/BossEnemy.cpp
+    src/MiniBossEnemy.cpp
     src/FractalNode.cpp
     src/FractalBoss.cpp
 )
@@ -37,10 +40,13 @@ set(HEADERS
     src/Vector2.h
     src/ExperienceOrb.h
     src/Material.h
+    src/Booster.h
     src/SpeedUpBooster.h
+    src/HealingBooster.h
     src/Weapon.h
     src/Shop.h
     src/BossEnemy.h
+    src/MiniBossEnemy.h
     src/FractalNode.h
     src/FractalBoss.h
 )

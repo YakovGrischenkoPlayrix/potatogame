@@ -41,6 +41,10 @@ public:
     int getDamage() const { return damage; }
     int getHealth() const { return health; }
     virtual int getMaxHealth() const; // Виртуальный метод для получения максимального здоровья
+    // Является ли юнит боссом (для изменения логики спавна/индикаторов)
+    virtual bool isBossUnit() const { return false; }
+    // Является ли юнит лидером (центральной частью роя)
+    virtual bool isLeader() const { return false; }
     
 private:
     void loadSprites(SDL_Renderer* renderer);

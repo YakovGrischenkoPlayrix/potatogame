@@ -8,6 +8,7 @@
 struct PlayerStats {
     // Brotato-like stats
     int maxHealth;
+    int maxShield; // Добавляем максимальный щит
     float moveSpeed;
     float pickupRange;
     float attackSpeed;
@@ -19,7 +20,7 @@ struct PlayerStats {
     int luck;
     int materials; // Add materials currency like Brotato
     
-    PlayerStats() : maxHealth(100), moveSpeed(200), pickupRange(50), 
+    PlayerStats() : maxHealth(100), maxShield(100), moveSpeed(200), pickupRange(50), 
                    attackSpeed(1.0f), damage(10), range(200), 
                    armor(0), healthRegen(0), dodgeChance(0), luck(0), materials(50) {}
 };
@@ -76,12 +77,21 @@ public:
     void applyFireRateBoost(float multiplier, float durationSeconds);
     float getFireRateMultiplier() const { return fireRateMultiplier; }
     
+    // Healing
+    void heal(int amount);
+    
+    // Shield management
+    void takeShieldDamage(int damage);
+    void restoreShield(int amount);
+    int getShield() const { return shield; }
+    
 private:
     Vector2 position;
     Vector2 velocity;
     Vector2 shootDirection;
     float radius;
     int health;
+    int shield; // Добавляем поле щита
     float shootCooldown;
     float timeSinceLastShot;
     

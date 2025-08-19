@@ -1,15 +1,13 @@
 #pragma once
 #include "Booster.h"
 
-class SpeedUpBooster : public Booster {
+class HealingBooster : public Booster {
 public:
-    SpeedUpBooster(const Vector2& spawnPosition);
-    ~SpeedUpBooster();
+    HealingBooster(const Vector2& spawnPosition);
+    ~HealingBooster();
 
     void initialize(SDL_Renderer* renderer) override;
     void update(float deltaTime) override;
     void render(SDL_Renderer* renderer) override;
     void collect() override;
 };
-
-

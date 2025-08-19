@@ -1,15 +1,15 @@
-#include "SpeedUpBooster.h"
+#include "HealingBooster.h"
 #include <iostream>
 
-SpeedUpBooster::SpeedUpBooster(const Vector2& spawnPosition)
+HealingBooster::HealingBooster(const Vector2& spawnPosition)
     : Booster(spawnPosition, 5.0f) {}
 
-SpeedUpBooster::~SpeedUpBooster() {}
+HealingBooster::~HealingBooster() {}
 
-void SpeedUpBooster::initialize(SDL_Renderer* renderer) {
-    SDL_Surface* surface = IMG_Load("assets/ui/speed_up_booster.png");
+void HealingBooster::initialize(SDL_Renderer* renderer) {
+    SDL_Surface* surface = IMG_Load("assets/ui/healing_booster.png");
     if (!surface) {
-        std::cout << "Failed to load speed_up_booster.png: " << IMG_GetError() << std::endl;
+        std::cout << "Failed to load healing_booster.png: " << IMG_GetError() << std::endl;
         return;
     }
     texture = SDL_CreateTextureFromSurface(renderer, surface);
@@ -18,7 +18,7 @@ void SpeedUpBooster::initialize(SDL_Renderer* renderer) {
     SDL_FreeSurface(surface);
 }
 
-void SpeedUpBooster::update(float deltaTime) {
+void HealingBooster::update(float deltaTime) {
     if (!alive) return;
     lifetime += deltaTime;
     if (lifetime >= maxLifetime) {
@@ -26,7 +26,7 @@ void SpeedUpBooster::update(float deltaTime) {
     }
 }
 
-void SpeedUpBooster::render(SDL_Renderer* renderer) {
+void HealingBooster::render(SDL_Renderer* renderer) {
     if (!alive) return;
     
     if (texture) {
@@ -36,8 +36,8 @@ void SpeedUpBooster::render(SDL_Renderer* renderer) {
         SDL_Rect dst{ static_cast<int>(position.x - scaledW / 2), static_cast<int>(position.y - scaledH / 2), scaledW, scaledH };
         SDL_RenderCopy(renderer, texture, nullptr, &dst);
     } else {
-        // Fallback: draw yellow star-like circle
-        SDL_SetRenderDrawColor(renderer, 255, 215, 0, 255);
+        // Fallback: draw green cross-like circle
+        SDL_SetRenderDrawColor(renderer, 0, 255, 0, 255);
         int r = static_cast<int>(radius);
         int cx = static_cast<int>(position.x);
         int cy = static_cast<int>(position.y);
@@ -54,8 +54,6 @@ void SpeedUpBooster::render(SDL_Renderer* renderer) {
     renderProgressBar(renderer);
 }
 
-void SpeedUpBooster::collect() {
+void HealingBooster::collect() {
     alive = false;
 }
-
-
