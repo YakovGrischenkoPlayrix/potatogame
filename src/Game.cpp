@@ -2,6 +2,7 @@
 #include "SlimeEnemy.h"
 #include "PebblinEnemy.h"
 #include "BossEnemy.h"
+#include "FractalBoss.h"
 #include <cmath>
 #include <iostream>
 #include <random>
@@ -699,11 +700,20 @@ void Game::renderTTFText(const char* text, int x, int y, SDL_Color color, int fo
 void Game::spawnEnemies() {
     // Проверка спавна босса каждую волну (начиная с 2-й)
     if (wave >= 2 && !bossSpawnedThisWave && !currentBoss) {
-        // Спавн босса в центре экрана
         Vector2 bossSpawnPos(WINDOW_WIDTH/2, 100); // Сверху по центру
-        currentBoss = CreateBossEnemy(bossSpawnPos, renderer);
+        
+        // Случайный выбор типа босса
+        bool spawnFractalBoss = shouldSpawnFractalBoss();
+        
+        if (spawnFractalBoss) {
+            currentBoss = CreateFractalBoss(bossSpawnPos, renderer);
+            std::cout << "Fractal Boss spawned randomly at wave " << wave << "!" << std::endl;
+        } else {
+            currentBoss = CreateBossEnemy(bossSpawnPos, renderer);
+            std::cout << "Regular Boss spawned randomly at wave " << wave << "!" << std::endl;
+        }
+        
         bossSpawnedThisWave = true;
-        std::cout << "Boss spawned at wave " << wave << "!" << std::endl;
         return; // Не спавним обычных врагов в момент спавна босса
     }
     
@@ -777,9 +787,26 @@ void Game::updateSpawnIndicators(float deltaTime) {
                 case EnemySpawnType::BOSS:
                     // Спавн босса только если его еще нет
                     if (!currentBoss && !bossSpawnedThisWave) {
-                        currentBoss = CreateBossEnemy(indicator.position, renderer);
+                        // Случайный выбор типа босса
+                        bool spawnFractalBoss = shouldSpawnFractalBoss();
+                        
+                        if (spawnFractalBoss) {
+                            currentBoss = CreateFractalBoss(indicator.position, renderer);
+                            std::cout << "Fractal Boss spawned randomly via indicator!" << std::endl;
+                        } else {
+                            currentBoss = CreateBossEnemy(indicator.position, renderer);
+                            std::cout << "Regular Boss spawned randomly via indicator!" << std::endl;
+                        }
+                        
                         bossSpawnedThisWave = true;
-                        std::cout << "Boss spawned via indicator!" << std::endl;
+                    }
+                    break;
+                case EnemySpawnType::FRACTAL_BOSS:
+                    // Прямой спавн фрактального босса (если нужен)
+                    if (!currentBoss && !bossSpawnedThisWave) {
+                        currentBoss = CreateFractalBoss(indicator.position, renderer);
+                        bossSpawnedThisWave = true;
+                        std::cout << "Fractal Boss spawned directly via indicator!" << std::endl;
                     }
                     break;
                 case EnemySpawnType::BASE:
@@ -965,4 +992,26 @@ void Game::cleanup() {
     TTF_Quit();
     IMG_Quit();
     SDL_Quit();
+}
+
+// Boss spawning helper function
+bool Game::shouldSpawnFractalBoss() const {
+    static std::random_device rd;
+    static std::mt19937 gen(rd());
+    
+    // Вероятность фрактального босса увеличивается с волнами
+    // Волна 2-3: 20% фрактального, 80% обычного
+    // Волна 4-5: 40% фрактального, 60% обычного  
+    // Волна 6+: 60% фрактального, 40% обычного
+    float fractalChance;
+    if (wave <= 3) {
+        fractalChance = 0.2f;  // 20%
+    } else if (wave <= 5) {
+        fractalChance = 0.4f;  // 40%
+    } else {
+        fractalChance = 0.6f;  // 60%
+    }
+    
+    std::uniform_real_distribution<float> dis(0.0f, 1.0f);
+    return dis(gen) < fractalChance;
 }
