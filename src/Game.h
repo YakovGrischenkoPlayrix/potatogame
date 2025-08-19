@@ -16,6 +16,7 @@
 class SlimeEnemy;
 class PebblinEnemy;
 class BossEnemy;
+class FractalBoss;
 
 enum class EnemySpawnType {
     BASE,
@@ -68,6 +69,10 @@ private:
     float getMaterialDropChance() const;
     void renderUI();
     
+    // Boss spawning helpers
+    bool shouldSpawnFractalBoss() const;
+    
+private:
     SDL_Window* window;
     SDL_Renderer* renderer;
     bool running;

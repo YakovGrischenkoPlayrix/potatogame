@@ -13,7 +13,10 @@ enum class BulletType {
     MINIBOSS_2,
     MINIBOSS_3,
     MINIBOSS_4,
-    MINIBOSS_5
+    MINIBOSS_5,
+    FRACTAL_CENTER,   // Красные пули центрального узла
+    FRACTAL_LEVEL1,   // Зеленые пули уровня 1
+    FRACTAL_LEVEL2    // Синие пули уровня 2
 };
 
 class Bullet {

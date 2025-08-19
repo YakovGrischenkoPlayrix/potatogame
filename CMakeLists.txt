@@ -24,6 +24,8 @@ set(SOURCES
     src/Shop.cpp
     src/BossEnemy.cpp
     src/MiniBossEnemy.cpp
+    src/FractalNode.cpp
+    src/FractalBoss.cpp
 )
 
 set(HEADERS
@@ -41,6 +43,8 @@ set(HEADERS
     src/Shop.h
     src/BossEnemy.h
     src/MiniBossEnemy.h
+    src/FractalNode.h
+    src/FractalBoss.h
 )
 
 add_executable(${PROJECT_NAME} ${SOURCES} ${HEADERS})
