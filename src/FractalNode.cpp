@@ -13,22 +13,22 @@ FractalNode::FractalNode(Vector2 offset, int hp, int level)
         case 0: // Центральный узел
             nodeRadius = 25.0f;
             shootInterval = 0.8f;
-            bulletColor = {255, 100, 100, 255}; // Красный
+            bulletColor = {50, 200, 50, 255}; // Ярко-зеленый
             break;
         case 1: // Первый уровень
             nodeRadius = 20.0f;
             shootInterval = 1.0f;
-            bulletColor = {100, 255, 100, 255}; // Зеленый
+            bulletColor = {80, 160, 80, 255}; // Средне-зеленый
             break;
         case 2: // Второй уровень
             nodeRadius = 15.0f;
             shootInterval = 1.2f;
-            bulletColor = {100, 100, 255, 255}; // Синий
+            bulletColor = {120, 180, 120, 255}; // Светло-зеленый
             break;
-        case 3: // Третий уровень
+        case 3: // Третий уровень (на всякий случай)
             nodeRadius = 12.0f;
             shootInterval = 1.5f;
-            bulletColor = {255, 255, 100, 255}; // Желтый
+            bulletColor = {60, 120, 60, 255}; // Темно-зеленый
             break;
         default:
             nodeRadius = 10.0f;
@@ -62,9 +62,9 @@ void FractalNode::tryShoot(Vector2 playerPos, std::vector<std::unique_ptr<Bullet
     // Создаем пулю с цветом в зависимости от уровня узла
     BulletType bulletType;
     switch (nodeLevel) {
-        case 0: bulletType = BulletType::FRACTAL_CENTER; break;  // Красные пули центра
-        case 1: bulletType = BulletType::FRACTAL_LEVEL1; break;  // Зеленые пули уровня 1
-        case 2: bulletType = BulletType::FRACTAL_LEVEL2; break;  // Синие пули уровня 2
+        case 0: bulletType = BulletType::FRACTAL_CENTER; break;  // Ярко-зеленые пули центра
+        case 1: bulletType = BulletType::FRACTAL_LEVEL1; break;  // Средне-зеленые пули уровня 1
+        case 2: bulletType = BulletType::FRACTAL_LEVEL2; break;  // Светло-зеленые пули уровня 2
         default: bulletType = BulletType::BOSS_BULLET; break;    // Оранжевые пули по умолчанию
     }
     
@@ -133,8 +133,8 @@ void FractalNode::render(SDL_Renderer* renderer, Vector2 parentPos, float rotati
     
     Vector2 worldPos = getWorldPosition(parentPos, rotation);
     
-    // Рендер соединительных линий к живым детям
-    SDL_SetRenderDrawColor(renderer, 150, 75, 25, 255);
+    // Рендер соединительных линий к живым детям (темно-зеленый)
+    SDL_SetRenderDrawColor(renderer, 30, 100, 30, 255);
     for (const auto& child : children) {
         if (child.alive) {
             Vector2 childWorldPos = child.getWorldPosition(worldPos, rotation);
@@ -144,11 +144,33 @@ void FractalNode::render(SDL_Renderer* renderer, Vector2 parentPos, float rotati
         }
     }
     
-    // Основной узел - квадрат с цветом в зависимости от здоровья
+    // Основной узел - квадрат с зеленым цветом в зависимости от уровня и здоровья
     float healthPercent = static_cast<float>(health) / maxHealth;
-    Uint8 red = static_cast<Uint8>(200 * healthPercent + 55);
-    Uint8 green = static_cast<Uint8>(100 * healthPercent + 50);
-    Uint8 blue = static_cast<Uint8>(50 * healthPercent + 25);
+    
+    // Зеленые оттенки в зависимости от уровня узла
+    Uint8 red, green, blue;
+    switch (nodeLevel) {
+        case 0: // Центральный узел - яркий зеленый (как у Creeper)
+            red = static_cast<Uint8>(20 + 40 * healthPercent);   // 20-60
+            green = static_cast<Uint8>(120 + 100 * healthPercent); // 120-220  
+            blue = static_cast<Uint8>(20 + 40 * healthPercent);   // 20-60
+            break;
+        case 1: // Уровень 1 - средний зеленый
+            red = static_cast<Uint8>(40 + 30 * healthPercent);   // 40-70
+            green = static_cast<Uint8>(100 + 80 * healthPercent); // 100-180
+            blue = static_cast<Uint8>(40 + 30 * healthPercent);   // 40-70
+            break;
+        case 2: // Уровень 2 - светло-зеленый
+            red = static_cast<Uint8>(60 + 40 * healthPercent);   // 60-100
+            green = static_cast<Uint8>(140 + 80 * healthPercent); // 140-220
+            blue = static_cast<Uint8>(60 + 40 * healthPercent);   // 60-100
+            break;
+        default: // Темно-зеленый по умолчанию
+            red = static_cast<Uint8>(30 + 20 * healthPercent);
+            green = static_cast<Uint8>(80 + 60 * healthPercent);
+            blue = static_cast<Uint8>(30 + 20 * healthPercent);
+            break;
+    }
     
     SDL_SetRenderDrawColor(renderer, red, green, blue, 255);
     SDL_Rect nodeRect = {
@@ -159,8 +181,8 @@ void FractalNode::render(SDL_Renderer* renderer, Vector2 parentPos, float rotati
     };
     SDL_RenderFillRect(renderer, &nodeRect);
     
-    // Контур узла
-    SDL_SetRenderDrawColor(renderer, 255, 200, 150, 255);
+    // Контур узла (темно-зеленый)
+    SDL_SetRenderDrawColor(renderer, 20, 80, 20, 255);
     SDL_RenderDrawRect(renderer, &nodeRect);
     
     // Индикатор уровня узла (маленькая точка в центре)
