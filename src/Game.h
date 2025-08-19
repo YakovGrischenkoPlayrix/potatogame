@@ -21,7 +21,8 @@ enum class EnemySpawnType {
     BASE,
     SLIME,
     PEBBLIN,
-    BOSS
+    BOSS,
+    MINIBOSS
 };
 
 struct SpawnIndicator {
@@ -78,6 +79,7 @@ private:
     // Босс система - только один босс за волну
     std::unique_ptr<Enemy> currentBoss;
     bool bossSpawnedThisWave;
+    bool swarmSpawnedThisWave;
     std::vector<SpawnIndicator> spawnIndicators;
     std::vector<std::unique_ptr<ExperienceOrb>> experienceOrbs;
     std::vector<std::unique_ptr<Material>> materials;

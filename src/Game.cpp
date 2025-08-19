@@ -2,6 +2,7 @@
 #include "SlimeEnemy.h"
 #include "PebblinEnemy.h"
 #include "BossEnemy.h"
+#include "MiniBossEnemy.h"
 #include <cmath>
 #include <iostream>
 #include <random>
@@ -16,7 +17,7 @@
 Game::Game() : window(nullptr), renderer(nullptr), running(false), 
                timeSinceLastSpawn(0), score(0), wave(1), mousePos(0, 0),
                waveTimer(0), waveDuration(10.0f), waveActive(true), materialBag(0),
-               currentBoss(nullptr), bossSpawnedThisWave(false),
+               currentBoss(nullptr), bossSpawnedThisWave(false), swarmSpawnedThisWave(false),
                defaultFont(nullptr) {
 }
 
@@ -172,6 +173,7 @@ void Game::update(float deltaTime) {
             wave++;
             waveTimer = 0;
             bossSpawnedThisWave = false; // Сброс флага босса для новой волны
+            swarmSpawnedThisWave = false;
             std::cout << "Wave " << wave << " will start after shop" << std::endl;
             
             // Increase wave duration by 2.5 seconds each wave, capped at 30 seconds
@@ -529,6 +531,43 @@ void Game::renderUI() {
             renderNumber(bossMaxHealth, bossBarX + bossBarWidth/2 + 15, bossBarY - 2, 1);
         }
     }
+
+    // Swarm leader health bar (if exists)
+    {
+        int leaderHealth = 0;
+        int leaderMax = 0;
+        for (const auto& e : enemies) {
+            if (e->isAlive() && e->isBossUnit() && e->isLeader()) {
+                leaderHealth = e->getHealth();
+                leaderMax = e->getMaxHealth();
+                break;
+            }
+        }
+        if (leaderMax > 0) {
+            int barWidth = 700;
+            int barHeight = 14;
+            int barX = (WINDOW_WIDTH/2 - barWidth/2) - 240;
+            int barY = 95; // ниже полоски босса
+
+            SDL_SetRenderDrawColor(renderer, 60, 0, 60, 255);
+            SDL_Rect bg = {barX, barY, barWidth, barHeight};
+            SDL_RenderFillRect(renderer, &bg);
+
+            SDL_SetRenderDrawColor(renderer, 200, 60, 255, 255); // цвет лидера (магентовый)
+            int w = (leaderHealth * barWidth) / leaderMax;
+            SDL_Rect fg = {barX, barY, w, barHeight};
+            SDL_RenderFillRect(renderer, &fg);
+
+            SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
+            SDL_RenderDrawRect(renderer, &bg);
+
+            if (defaultFont) {
+                SDL_Color txt = {255, 255, 255, 255};
+                std::string t = "SWARM LEADER: " + std::to_string(leaderHealth) + " / " + std::to_string(leaderMax);
+                renderTTFText(t.c_str(), barX + barWidth/2 - 100, barY - 2, txt, 14);
+            }
+        }
+    }
     
     // Experience bar (bottom of screen)
     SDL_SetRenderDrawColor(renderer, 0, 100, 0, 255); // Dark green background
@@ -697,18 +736,51 @@ void Game::renderTTFText(const char* text, int x, int y, SDL_Color color, int fo
 }
 
 void Game::spawnEnemies() {
-    // Проверка спавна босса каждую волну (начиная с 2-й)
-    if (wave >= 2 && !bossSpawnedThisWave && !currentBoss) {
-        // Спавн босса в центре экрана
-        Vector2 bossSpawnPos(WINDOW_WIDTH/2, 100); // Сверху по центру
-        currentBoss = CreateBossEnemy(bossSpawnPos, renderer);
-        bossSpawnedThisWave = true;
-        std::cout << "Boss spawned at wave " << wave << "!" << std::endl;
-        return; // Не спавним обычных врагов в момент спавна босса
+    // Проверка спавна босса и роя каждую волну (начиная с 2-й). Теперь оба появляются одновременно
+    if (wave >= 2) {
+        bool anyBossUnitAlive = (currentBoss && currentBoss->isAlive());
+        if (!anyBossUnitAlive) {
+            for (const auto& e : enemies) {
+                if (e->isAlive() && e->isBossUnit()) { anyBossUnitAlive = true; break; }
+            }
+        }
+
+        if (!bossSpawnedThisWave && !currentBoss) {
+            // Спавн большого босса
+            Vector2 bossSpawnPos(WINDOW_WIDTH/2, 160); // Сверху по центру
+            currentBoss = CreateBossEnemy(bossSpawnPos, renderer);
+            bossSpawnedThisWave = true;
+            std::cout << "Boss spawned at wave " << wave << "!" << std::endl;
+        }
+
+        if (!swarmSpawnedThisWave) {
+            // Спавн роя из 5 минибоссов (4 по кругу + лидер в центре круга)
+            Vector2 center(WINDOW_WIDTH/2, 360);
+            float ringRadius = 150.0f;
+            // Порядок вариантов: 1..4 по кругу, 5 — лидер в центре
+            std::vector<Vector2> spawnPositions;
+            for (int i = 0; i < 4; ++i) {
+                float angle = (float)i * 3.1415926f * 0.5f; // 0, 90, 180, 270 град.
+                spawnPositions.emplace_back(center.x + ringRadius * cosf(angle), center.y + ringRadius * sinf(angle));
+            }
+            spawnPositions.emplace_back(center); // лидер
+
+            float telegraphDuration = spawnTelegraphSeconds;
+            for (int i = 0; i < 5; ++i) {
+                spawnIndicators.emplace_back(spawnPositions[i], telegraphDuration, EnemySpawnType::MINIBOSS);
+            }
+            swarmSpawnedThisWave = true;
+            std::cout << "Swarm indicators queued!" << std::endl;
+        }
     }
     
-    // Если босс жив - снижаем спавн обычных врагов
+    // Если жив любой босс-юнит (большой босс или минибоссы) - снижаем спавн обычных врагов
     bool bossAlive = (currentBoss && currentBoss->isAlive());
+    if (!bossAlive) {
+        for (const auto& e : enemies) {
+            if (e->isAlive() && e->isBossUnit()) { bossAlive = true; break; }
+        }
+    }
     
     timeSinceLastSpawn += 0.016f;
     
@@ -780,6 +852,32 @@ void Game::updateSpawnIndicators(float deltaTime) {
                         currentBoss = CreateBossEnemy(indicator.position, renderer);
                         bossSpawnedThisWave = true;
                         std::cout << "Boss spawned via indicator!" << std::endl;
+                    }
+                    break;
+                case EnemySpawnType::MINIBOSS:
+                    // Индикаторы MINIBOSS создаются пачкой в spawnEnemies(),
+                    // здесь мы создаем конкретных минибоссов. Вариант и лидерство
+                    // определим по близости к центру (грубый хак без хранения индекса).
+                    // В реальной игре лучше пронести метаданные. Здесь: центр окна — лидер.
+                    {
+                        Vector2 center(WINDOW_WIDTH/2, 360);
+                        float d = indicator.position.distance(center);
+                        bool isLeader = (d < 10.0f);
+                        int variantIndex = 1;
+                        if (!isLeader) {
+                            // Определим квадрант по углу
+                            Vector2 v = indicator.position - center;
+                            float a = atan2f(v.y, v.x);
+                            if (a < 0) a += 2.0f * 3.1415926f;
+                            // 4 сегмента по 90 градусов → варианты 1..4
+                            variantIndex = 1 + (int)floorf(a / (0.5f * 3.1415926f));
+                            if (variantIndex < 1) variantIndex = 1;
+                            if (variantIndex > 4) variantIndex = 4;
+                        } else {
+                            variantIndex = 5;
+                        }
+                        extern std::unique_ptr<Enemy> CreateMiniBossEnemy(const Vector2& pos, SDL_Renderer* renderer, int variantIndex, bool isLeader);
+                        enemies.push_back(CreateMiniBossEnemy(indicator.position, renderer, variantIndex, isLeader));
                     }
                     break;
                 case EnemySpawnType::BASE:

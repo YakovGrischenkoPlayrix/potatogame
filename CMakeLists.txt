@@ -23,6 +23,7 @@ set(SOURCES
     src/Weapon.cpp
     src/Shop.cpp
     src/BossEnemy.cpp
+    src/MiniBossEnemy.cpp
 )
 
 set(HEADERS
@@ -39,6 +40,7 @@ set(HEADERS
     src/Weapon.h
     src/Shop.h
     src/BossEnemy.h
+    src/MiniBossEnemy.h
 )
 
 add_executable(${PROJECT_NAME} ${SOURCES} ${HEADERS})
