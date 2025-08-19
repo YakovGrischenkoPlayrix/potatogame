@@ -7,7 +7,8 @@ enum class BulletType {
     SMG,
     ENEMY_LOB,
     SHOTGUN,
-    SNIPER
+    SNIPER,
+    BOSS_BULLET
 };
 
 class Bullet {

@@ -109,3 +109,7 @@ void Enemy::render(SDL_Renderer* renderer) {
         }
     }
 }
+
+int Enemy::getMaxHealth() const {
+    return 1; // Базовые враги имеют 1 HP
+}

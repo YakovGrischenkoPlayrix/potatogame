@@ -31,8 +31,10 @@ void Bullet::update(float deltaTime) {
 void Bullet::render(SDL_Renderer* renderer) {
     if (!alive) return;
     
-    // Color based on ownership: red for enemies, yellow for player
-    if (enemyOwned) {
+    // Color based on bullet type and ownership
+    if (bulletType == BulletType::BOSS_BULLET) {
+        SDL_SetRenderDrawColor(renderer, 255, 140, 0, 255); // Orange for boss bullets
+    } else if (enemyOwned) {
         SDL_SetRenderDrawColor(renderer, 255, 50, 50, 255); // Red for enemy bullets
     } else {
         SDL_SetRenderDrawColor(renderer, 255, 255, 0, 255); // Yellow for player bullets

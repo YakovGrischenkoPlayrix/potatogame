@@ -24,12 +24,23 @@ public:
     float getRadius() const { return radius; }
     bool isAlive() const { return alive; }
     void destroy() { alive = false; }
-    void hit() { 
+    virtual void hit() { 
         state = EnemyState::HIT; 
         hitTimer = 0.0f; 
     }
     
+    virtual void takeDamage(int damage) {
+        health -= damage;
+        if (health <= 0) {
+            alive = false;
+            health = 0;
+        }
+        hit();
+    }
+    
     int getDamage() const { return damage; }
+    int getHealth() const { return health; }
+    virtual int getMaxHealth() const; // Виртуальный метод для получения максимального здоровья
     
 private:
     void loadSprites(SDL_Renderer* renderer);

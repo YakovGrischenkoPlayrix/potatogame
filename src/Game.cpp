@@ -1,6 +1,7 @@
 #include "Game.h"
 #include "SlimeEnemy.h"
 #include "PebblinEnemy.h"
+#include "BossEnemy.h"
 #include <cmath>
 #include <iostream>
 #include <random>
@@ -14,7 +15,8 @@
 
 Game::Game() : window(nullptr), renderer(nullptr), running(false), 
                timeSinceLastSpawn(0), score(0), wave(1), mousePos(0, 0),
-               waveTimer(0), waveDuration(20.0f), waveActive(true), materialBag(0),
+               waveTimer(0), waveDuration(10.0f), waveActive(true), materialBag(0),
+               currentBoss(nullptr), bossSpawnedThisWave(false),
                defaultFont(nullptr) {
 }
 
@@ -169,12 +171,13 @@ void Game::update(float deltaTime) {
             // Prepare for next wave
             wave++;
             waveTimer = 0;
+            bossSpawnedThisWave = false; // Сброс флага босса для новой волны
             std::cout << "Wave " << wave << " will start after shop" << std::endl;
             
-            // Increase wave duration by 5 seconds each wave, capped at 60 seconds
-            if (waveDuration < 60.0f) {
-                waveDuration += 5.0f;
-                if (waveDuration > 60.0f) waveDuration = 60.0f;
+            // Increase wave duration by 2.5 seconds each wave, capped at 30 seconds
+            if (waveDuration < 30.0f) {
+                waveDuration += 2.5f;
+                if (waveDuration > 30.0f) waveDuration = 30.0f;
             }
         }
     }
@@ -190,6 +193,14 @@ void Game::update(float deltaTime) {
     
     for (auto& enemy : enemies) {
         enemy->update(deltaTime, player->getPosition(), bullets);
+    }
+    
+    // Обновление босса
+    if (currentBoss) {
+        currentBoss->update(deltaTime, player->getPosition(), bullets);
+        if (!currentBoss->isAlive()) {
+            currentBoss.reset(); // Освобождаем босса
+        }
     }
 
     updateSpawnIndicators(deltaTime);
@@ -351,6 +362,11 @@ void Game::render() {
     for (auto& enemy : enemies) {
         enemy->render(renderer);
     }
+    
+    // Рендер босса
+    if (currentBoss) {
+        currentBoss->render(renderer);
+    }
 
     // Spawn indicators on top of background but beneath UI
     renderSpawnIndicators();
@@ -432,9 +448,9 @@ void Game::renderUI() {
     int materialX = 70 - (materialDigits * 6); // Center the number
     renderNumber(player->getStats().materials, materialX, 142, 2);
     
-    // Center top: Wave number with TTF text
+    // Right side: Wave number with TTF text (сдвинуто вправо)
     SDL_SetRenderDrawColor(renderer, 0, 0, 0, 200); // Semi-transparent black
-    SDL_Rect waveBg = {WINDOW_WIDTH/2 - 80, 20, 160, 40};
+    SDL_Rect waveBg = {WINDOW_WIDTH/2 - 80 + 280, 20, 160, 40}; // Сдвинуто вправо на 240px
     SDL_RenderFillRect(renderer, &waveBg);
     
     SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255); // White border
@@ -444,19 +460,19 @@ void Game::renderUI() {
     if (defaultFont) {
         SDL_Color waveColor = {255, 255, 255, 255};
         std::string waveText = "WAVE " + std::to_string(wave);
-        renderTTFText(waveText.c_str(), WINDOW_WIDTH/2 - 40, 28, waveColor, 18);
+        renderTTFText(waveText.c_str(), WINDOW_WIDTH/2 - 40 + 280, 28, waveColor, 18); // Сдвинуто вправо
     } else {
         // Fallback to bitmap rendering with better spacing
-        renderText("WAVE", WINDOW_WIDTH/2 - 50, 30, 2);
-        renderNumber(wave, WINDOW_WIDTH/2 + 10, 30, 2);
+        renderText("WAVE", WINDOW_WIDTH/2 - 50 + 280, 30, 2); // Сдвинуто вправо
+        renderNumber(wave, WINDOW_WIDTH/2 + 10 + 280, 30, 2); // Сдвинуто вправо
     }
     
-    // Center top: Countdown timer with actual numbers
+    // Right side: Countdown timer with actual numbers (сдвинуто вправо)
     float timeLeft = waveDuration - waveTimer;
     int seconds = (int)timeLeft;
     
     SDL_SetRenderDrawColor(renderer, 0, 0, 0, 200); // Semi-transparent black
-    SDL_Rect timerBg = {WINDOW_WIDTH/2 - 60, 70, 120, 60};
+    SDL_Rect timerBg = {WINDOW_WIDTH/2 - 60 + 280, 70, 120, 60}; // Сдвинуто вправо на 240px
     SDL_RenderFillRect(renderer, &timerBg);
     
     SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255); // White border
@@ -466,12 +482,52 @@ void Game::renderUI() {
     if (defaultFont) {
         SDL_Color timerColor = {255, 255, 255, 255};
         std::string timerText = std::to_string(seconds);
-        renderTTFText(timerText.c_str(), WINDOW_WIDTH/2 - 15, 80, timerColor, 28);
+        renderTTFText(timerText.c_str(), WINDOW_WIDTH/2 - 15 + 280, 80, timerColor, 28); // Сдвинуто вправо
     } else {
         // Fallback to bitmap rendering
         int timerDigits = std::to_string(seconds).length();
-        int timerX = WINDOW_WIDTH/2 - (timerDigits * 12);
+        int timerX = WINDOW_WIDTH/2 - (timerDigits * 12) + 280; // Сдвинуто вправо
         renderNumber(seconds, timerX, 85, 4);
+    }
+    
+    // Boss health bar (left side, at level height - only if boss exists)
+    if (currentBoss && currentBoss->isAlive()) {
+        int bossHealth = currentBoss->getHealth();
+        int bossMaxHealth = currentBoss->getMaxHealth();
+        
+        // Boss health bar: 4x wider than player (800px vs 200px), 2x thinner (17px vs 35px)
+        int bossBarWidth = 800;
+        int bossBarHeight = 17;
+        int bossBarX = (WINDOW_WIDTH/2 - bossBarWidth/2) - 240; // Сдвинуто влево на 30%
+        int bossBarY = 65; // На высоте уровня игрока
+        
+        // Dark red background
+        SDL_SetRenderDrawColor(renderer, 139, 0, 0, 255);
+        SDL_Rect bossHealthBg = {bossBarX, bossBarY, bossBarWidth, bossBarHeight};
+        SDL_RenderFillRect(renderer, &bossHealthBg);
+        
+        // Boss health bar (dark orange/red for boss)
+        SDL_SetRenderDrawColor(renderer, 255, 100, 0, 255); // Orange-red for boss
+        int bossHealthWidth = (bossHealth * bossBarWidth) / bossMaxHealth;
+        SDL_Rect bossHealthBar = {bossBarX, bossBarY, bossHealthWidth, bossBarHeight};
+        SDL_RenderFillRect(renderer, &bossHealthBar);
+        
+        // White border
+        SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
+        SDL_RenderDrawRect(renderer, &bossHealthBg);
+        
+        // Boss health text "BOSS: X / Y" (относительно позиции полоски)
+        if (defaultFont) {
+            SDL_Color bossTextColor = {255, 255, 255, 255};
+            std::string bossText = "BOSS: " + std::to_string(bossHealth) + " / " + std::to_string(bossMaxHealth);
+            renderTTFText(bossText.c_str(), bossBarX + bossBarWidth/2 - 60, bossBarY - 2, bossTextColor, 14);
+        } else {
+            // Fallback to bitmap rendering
+            renderText("BOSS:", bossBarX + bossBarWidth/2 - 60, bossBarY - 2, 1);
+            renderNumber(bossHealth, bossBarX + bossBarWidth/2 - 20, bossBarY - 2, 1);
+            renderText("/", bossBarX + bossBarWidth/2, bossBarY - 2, 1);
+            renderNumber(bossMaxHealth, bossBarX + bossBarWidth/2 + 15, bossBarY - 2, 1);
+        }
     }
     
     // Experience bar (bottom of screen)
@@ -641,10 +697,28 @@ void Game::renderTTFText(const char* text, int x, int y, SDL_Color color, int fo
 }
 
 void Game::spawnEnemies() {
+    // Проверка спавна босса каждую волну (начиная с 2-й)
+    if (wave >= 2 && !bossSpawnedThisWave && !currentBoss) {
+        // Спавн босса в центре экрана
+        Vector2 bossSpawnPos(WINDOW_WIDTH/2, 100); // Сверху по центру
+        currentBoss = CreateBossEnemy(bossSpawnPos, renderer);
+        bossSpawnedThisWave = true;
+        std::cout << "Boss spawned at wave " << wave << "!" << std::endl;
+        return; // Не спавним обычных врагов в момент спавна босса
+    }
+    
+    // Если босс жив - снижаем спавн обычных врагов
+    bool bossAlive = (currentBoss && currentBoss->isAlive());
+    
     timeSinceLastSpawn += 0.016f;
     
     float spawnRate = 1.0f - (wave * 0.1f);
     if (spawnRate < 0.2f) spawnRate = 0.2f;
+    
+    // Если босс жив, увеличиваем интервал спавна в 3 раза
+    if (bossAlive) {
+        spawnRate *= 3.0f;
+    }
     
     if (timeSinceLastSpawn >= spawnRate) {
         timeSinceLastSpawn = 0;
@@ -660,8 +734,9 @@ void Game::spawnEnemies() {
         // Queue a flashing red X indicator before actual spawn
         float telegraphDuration = spawnTelegraphSeconds; // configurable
         
-        // Determine enemy type based on wave
+        // Определение типа врага в зависимости от волны
         EnemySpawnType enemyType = EnemySpawnType::BASE;
+        
         if (wave >= 2) {
             // From wave 2: 40% slime, 40% pebblin, 20% base
             float typeRoll = slimeChance(gen);
@@ -670,6 +745,7 @@ void Game::spawnEnemies() {
             } else if (typeRoll < 0.8f) {
                 enemyType = EnemySpawnType::PEBBLIN;
             }
+            // остальные 20% - базовые враги
         } else {
             // Wave 1: 50% slime, 50% base (no pebblin yet)
             if (slimeChance(gen) < 0.5f) {
@@ -697,6 +773,14 @@ void Game::updateSpawnIndicators(float deltaTime) {
                     break;
                 case EnemySpawnType::PEBBLIN:
                     enemies.push_back(CreatePebblinEnemy(indicator.position, renderer));
+                    break;
+                case EnemySpawnType::BOSS:
+                    // Спавн босса только если его еще нет
+                    if (!currentBoss && !bossSpawnedThisWave) {
+                        currentBoss = CreateBossEnemy(indicator.position, renderer);
+                        bossSpawnedThisWave = true;
+                        std::cout << "Boss spawned via indicator!" << std::endl;
+                    }
                     break;
                 case EnemySpawnType::BASE:
                 default:
@@ -746,9 +830,17 @@ void Game::checkCollisions() {
                 float distance = bullet->getPosition().distance(enemy->getPosition());
                 if (distance < bullet->getRadius() + enemy->getRadius()) {
                     bullet->destroy();
-                    enemy->hit();
-                    enemy->destroy();
+                    enemy->takeDamage(bullet->getDamage());
                 }
+            }
+        }
+        
+        // Коллизии с боссом
+        if (bullet->isAlive() && currentBoss && currentBoss->isAlive()) {
+            float distance = bullet->getPosition().distance(currentBoss->getPosition());
+            if (distance < bullet->getRadius() + currentBoss->getRadius()) {
+                bullet->destroy();
+                currentBoss->takeDamage(bullet->getDamage());
             }
         }
     }
@@ -760,6 +852,15 @@ void Game::checkCollisions() {
                 player->takeDamage(enemy->getDamage());
                 enemy->destroy();
             }
+        }
+    }
+    
+    // Коллизии босса с игроком
+    if (currentBoss && currentBoss->isAlive()) {
+        float distance = player->getPosition().distance(currentBoss->getPosition());
+        if (distance < player->getRadius() + currentBoss->getRadius()) {
+            player->takeDamage(currentBoss->getDamage());
+            // Босс не умирает от контакта с игроком
         }
     }
 }
@@ -779,8 +880,7 @@ void Game::checkMeleeAttacks() {
                 if (!enemy->isAlive()) continue;
                 float d = brickPos.distance(enemy->getPosition());
                 if (d <= hitR + enemy->getRadius()) {
-                    enemy->hit();
-                    enemy->destroy();
+                    enemy->takeDamage(damage);
                     // опыт и материалы, как в ближнем бою
                     experienceOrbs.push_back(std::make_unique<ExperienceOrb>(enemy->getPosition()));
                     static std::random_device matRd;
@@ -818,8 +918,7 @@ void Game::checkMeleeAttacks() {
                 if (enemy->isAlive()) {
                     float distance = weaponTip.distance(enemy->getPosition());
                     if (distance <= damageRadius + enemy->getRadius()) {
-                        enemy->hit();
-                        enemy->destroy();
+                        enemy->takeDamage(meleeDamage);
                         
                         // Create experience orb at enemy position
                         experienceOrbs.push_back(std::make_unique<ExperienceOrb>(enemy->getPosition()));
@@ -833,6 +932,14 @@ void Game::checkMeleeAttacks() {
                             materials.push_back(std::make_unique<Material>(enemy->getPosition()));
                         }
                     }
+                }
+            }
+            
+            // Мелее атаки по боссу
+            if (currentBoss && currentBoss->isAlive()) {
+                float distance = weaponTip.distance(currentBoss->getPosition());
+                if (distance <= damageRadius + currentBoss->getRadius()) {
+                    currentBoss->takeDamage(meleeDamage);
                 }
             }
         }
