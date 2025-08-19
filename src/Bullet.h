@@ -16,12 +16,14 @@ enum class BulletType {
     MINIBOSS_5,
     FRACTAL_CENTER,   // Красные пули центрального узла
     FRACTAL_LEVEL1,   // Зеленые пули уровня 1
-    FRACTAL_LEVEL2    // Синие пули уровня 2
+    FRACTAL_LEVEL2,    // Синие пули уровня 2
+    CENTIPEDE_BULLET
+
 };
 
 class Bullet {
 public:
-    Bullet(Vector2 pos, Vector2 dir, int damage = 10, float range = 200.0f, float speed = 400.0f, BulletType type = BulletType::PISTOL, bool enemyOwned = false);
+    Bullet(Vector2 pos, Vector2 dir, int damage = 10, float range = 200.0f, float speed = 400.0f, BulletType type = BulletType::PISTOL, bool enemyOwned = false, SDL_Color color = {255, 255, 0, 255});
     
     void update(float deltaTime);
     void render(SDL_Renderer* renderer);
@@ -48,4 +50,7 @@ private:
     Vector2 velocity; // used when bulletType == ENEMY_LOB
     float gravity;    // positive value pulls "down" on screen
     bool enemyOwned;
+    
+    // Custom bullet color
+    SDL_Color bulletColor;
 };

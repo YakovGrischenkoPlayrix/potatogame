@@ -1,9 +1,9 @@
 #include "Bullet.h"
 
-Bullet::Bullet(Vector2 pos, Vector2 dir, int dmg, float range, float speed, BulletType type, bool enemyOwnedFlag) 
+Bullet::Bullet(Vector2 pos, Vector2 dir, int dmg, float range, float speed, BulletType type, bool enemyOwnedFlag, SDL_Color color) 
     : position(pos), startPosition(pos), direction(dir.normalized()), 
       speed(speed), radius(7), maxRange(range), damage(dmg), alive(true), bulletType(type),
-      velocity(dir.normalized() * speed), gravity(550.0f), enemyOwned(enemyOwnedFlag) {
+      velocity(dir.normalized() * speed), gravity(550.0f), enemyOwned(enemyOwnedFlag), bulletColor(color) {
 }
 
 void Bullet::update(float deltaTime) {
@@ -32,6 +32,7 @@ void Bullet::render(SDL_Renderer* renderer) {
     if (!alive) return;
     
     // Color based on bullet type and ownership
+
     switch (bulletType) {
         case BulletType::BOSS_BULLET:
             SDL_SetRenderDrawColor(renderer, 255, 140, 0, 255); // Orange for boss bullets
@@ -60,6 +61,9 @@ void Bullet::render(SDL_Renderer* renderer) {
         case BulletType::FRACTAL_LEVEL2:
             SDL_SetRenderDrawColor(renderer, 100, 100, 255, 255); // Blue for fractal level 2
             break;
+        case BulletType::CENTIPEDE_BULLET:
+            SDL_SetRenderDrawColor(renderer, bulletColor.r, bulletColor.g, bulletColor.b, bulletColor.a); // Custom color for centipede bullets
+            break;        
         default:
             if (enemyOwned) {
                 SDL_SetRenderDrawColor(renderer, 255, 50, 50, 255); // Red for enemy bullets
@@ -67,6 +71,7 @@ void Bullet::render(SDL_Renderer* renderer) {
                 SDL_SetRenderDrawColor(renderer, 255, 255, 0, 255); // Yellow for player bullets
             }
             break;
+
     }
     
     int centerX = (int)position.x;

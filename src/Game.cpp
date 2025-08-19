@@ -20,6 +20,7 @@ Game::Game() : window(nullptr), renderer(nullptr), running(false),
                waveTimer(0), waveDuration(10.0f), waveActive(true), materialBag(0),
                currentBoss(nullptr), bossSpawnedThisWave(false), swarmSpawnedThisWave(false),
                lastBossType(BossType::NONE), defaultFont(nullptr) {
+
 }
 
 Game::~Game() {
@@ -174,9 +175,11 @@ void Game::update(float deltaTime) {
             wave++;
             waveTimer = 0;
             bossSpawnedThisWave = false; // Сброс флага босса для новой волны
+
             swarmSpawnedThisWave = false;
             // Сброс типа последнего босса для новой волны (позволяет случайный выбор)
             lastBossType = BossType::NONE;
+
             std::cout << "Wave " << wave << " will start after shop" << std::endl;
             
             // Increase wave duration by 2.5 seconds each wave, capped at 30 seconds
@@ -571,6 +574,7 @@ void Game::renderUI() {
         }
     }
 
+
     // Swarm leader health bar (if exists)
     {
         int leaderHealth = 0;
@@ -607,6 +611,7 @@ void Game::renderUI() {
             }
         }
     }
+
     
     // Experience bar (bottom of screen)
     SDL_SetRenderDrawColor(renderer, 0, 100, 0, 255); // Dark green background
@@ -775,6 +780,7 @@ void Game::renderTTFText(const char* text, int x, int y, SDL_Color color, int fo
 }
 
 void Game::spawnEnemies() {
+
     // Волны >= 2: одновременно управляем большим боссом (случайный тип) и роем минибоссов
     if (wave >= 2) {
         bool anyBossUnitAlive = (currentBoss && currentBoss->isAlive());
@@ -827,6 +833,7 @@ void Game::spawnEnemies() {
             if (e->isAlive() && e->isBossUnit()) { bossAlive = true; break; }
         }
     }
+
     
     timeSinceLastSpawn += 0.016f;
     
@@ -893,6 +900,7 @@ void Game::updateSpawnIndicators(float deltaTime) {
                     enemies.push_back(CreatePebblinEnemy(indicator.position, renderer));
                     break;
                 case EnemySpawnType::BOSS:
+
                     if (!currentBoss && !bossSpawnedThisWave) {
                         bool spawnFractalBoss = shouldSpawnFractalBoss();
                         if (spawnFractalBoss) {
@@ -931,6 +939,7 @@ void Game::updateSpawnIndicators(float deltaTime) {
                         }
                         extern std::unique_ptr<Enemy> CreateMiniBossEnemy(const Vector2& pos, SDL_Renderer* renderer, int variantIndex, bool isLeader);
                         enemies.push_back(CreateMiniBossEnemy(indicator.position, renderer, variantIndex, isLeader));
+
                     }
                     break;
                 case EnemySpawnType::BASE:

@@ -17,7 +17,9 @@
 class SlimeEnemy;
 class PebblinEnemy;
 class BossEnemy;
+
 class FractalBoss;
+
 
 enum class EnemySpawnType {
     BASE,
@@ -95,6 +97,7 @@ private:
     };
     BossType lastBossType;
     
+
     std::vector<SpawnIndicator> spawnIndicators;
     std::vector<std::unique_ptr<ExperienceOrb>> experienceOrbs;
     std::vector<std::unique_ptr<Material>> materials;
