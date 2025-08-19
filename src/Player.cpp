@@ -6,7 +6,7 @@
 Player::Player(float x, float y) 
     : position(x, y), velocity(0, 0), shootDirection(1, 0), 
       radius(20), health(100), shootCooldown(0.15f), timeSinceLastShot(0),
-      experience(0), level(1), healthRegenTimer(0), playerTexture(nullptr) {
+      experience(0), level(1), healthRegenTimer(0), healthRegenAccumulator(0.0f), playerTexture(nullptr) {
     // Initialize health to match max health
     health = stats.maxHealth;
     
@@ -61,8 +61,21 @@ void Player::update(float deltaTime) {
     if (stats.healthRegen > 0) {
         healthRegenTimer += deltaTime;
         if (healthRegenTimer >= 1.0f) { // Regen every second
-            health += (int)stats.healthRegen;
-            if (health > stats.maxHealth) health = stats.maxHealth;
+            // Add health regeneration to accumulator
+            healthRegenAccumulator += stats.healthRegen;
+            
+            // Apply whole HP points and keep fractional part
+            int healthToAdd = (int)healthRegenAccumulator;
+            if (healthToAdd > 0) {
+                health += healthToAdd;
+                if (health > stats.maxHealth) health = stats.maxHealth;
+                healthRegenAccumulator -= healthToAdd; // Keep fractional part
+                
+
+                
+
+            }
+            
             healthRegenTimer = 0.0f;
         }
     }
