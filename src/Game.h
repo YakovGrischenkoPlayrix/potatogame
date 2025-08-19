@@ -72,8 +72,20 @@ private:
     float getMaterialDropChance() const;
     void renderUI();
     
+    // Boss types enum
+    enum class BossType {
+        NONE,
+        REGULAR,
+        FRACTAL,
+        CENTIPEDE
+    };
+    
     // Boss spawning helpers
     bool shouldSpawnFractalBoss() const;
+    BossType chooseBossType() const;
+    
+    // Система предотвращения повторения боссов подряд
+    BossType lastBossType;
     
 private:
     SDL_Window* window;
@@ -88,14 +100,6 @@ private:
     std::unique_ptr<Enemy> currentBoss;
     bool bossSpawnedThisWave;
     bool swarmSpawnedThisWave;
-    
-    // Система предотвращения повторения боссов подряд
-    enum class BossType {
-        NONE,
-        REGULAR,
-        FRACTAL
-    };
-    BossType lastBossType;
     
 
     std::vector<SpawnIndicator> spawnIndicators;
