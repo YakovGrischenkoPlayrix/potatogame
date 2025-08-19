@@ -46,6 +46,37 @@ std::string ShopItem::getWeaponDescription(WeaponType wType, WeaponTier wTier) {
     return "";
 }
 
+std::string ShopItem::getItemName(ItemType iType, int level) {
+    std::string levelPrefix;
+    switch (level) {
+        case 1: levelPrefix = ""; break;
+        case 2: levelPrefix = "Improved "; break;
+        case 3: levelPrefix = "Enhanced "; break;
+        case 4: levelPrefix = "Superior "; break;
+        default: levelPrefix = ""; break;
+    }
+    
+    switch (iType) {
+        case ItemType::HEALTH_REGENERATION:
+            return levelPrefix + "Health Regeneration";
+    }
+    return "Unknown Item";
+}
+
+std::string ShopItem::getItemDescription(ItemType iType, int level) {
+    switch (iType) {
+        case ItemType::HEALTH_REGENERATION: {
+            float regenRate = 0.5f * level; // 0.5 HP/sec per level (level 1 = 1 HP per 2 sec)
+            if (level == 1) return "Regenerate 1 HP every 2 seconds";
+            else if (level == 2) return "Regenerate 2 HP every 2 seconds";
+            else if (level == 3) return "Regenerate 3 HP every 2 seconds";
+            else if (level == 4) return "Regenerate 4 HP every 2 seconds";
+            else return "Passive health regeneration";
+        }
+    }
+    return "Unknown item effect";
+}
+
 Shop::Shop() : active(false), rerollCount(0), currentWave(0), selectedItem(0), hoveredItem(-1), lastMousePressed(false), selectedOwnedWeapon(-1) {
     for (int i = 0; i < 4; i++) {
         keyPressed[i] = false;
@@ -69,6 +100,7 @@ void Shop::loadAssets(SDL_Renderer* renderer) {
     texWeaponSMG = loadTexture("assets/weapons/smg.png", renderer);
     texWeaponShotgun = loadTexture("assets/weapons/shotgun.png", renderer);
     texWeaponSniper = loadTexture("assets/weapons/sniper2.png", renderer);
+    texHealthRegen = loadTexture("assets/ui/heart.png", renderer);
 }
 
 void Shop::unloadAssets() {
@@ -86,6 +118,7 @@ void Shop::unloadAssets() {
     destroyIf(texWeaponSMG);
     destroyIf(texWeaponShotgun);
     destroyIf(texWeaponSniper);
+    destroyIf(texHealthRegen);
 }
 
 void Shop::generateItems(int waveNumber, int playerLuck) {
@@ -94,32 +127,67 @@ void Shop::generateItems(int waveNumber, int playerLuck) {
     static std::random_device rd;
     static std::mt19937 gen(rd());
     
-    // Generate 4 random items
+    // Generate 4 random items (mix of weapons and items)
     for (int i = 0; i < MAX_SHOP_ITEMS; i++) {
-        // Choose weapon type (including new weapons)
-        std::uniform_int_distribution<int> weaponDist(0, 3); // 0-3 for 4 weapon types
-        WeaponType weaponType;
-        switch (weaponDist(gen)) {
-            case 0: weaponType = WeaponType::PISTOL; break;
-            case 1: weaponType = WeaponType::SMG; break;
-            case 2: weaponType = WeaponType::SHOTGUN; break;
-            case 3: weaponType = WeaponType::SNIPER; break;
-            default: weaponType = WeaponType::PISTOL; break;
+        // 25% chance for items, 75% chance for weapons
+        std::uniform_int_distribution<int> itemTypeDist(0, 3);
+        bool generateItem = (itemTypeDist(gen) == 0); // 1 in 4 chance for items
+        
+
+        
+        if (generateItem) {
+            // Generate health regeneration item
+            ItemType itemType = ItemType::HEALTH_REGENERATION;
+            
+            // Choose level based on wave number (similar to weapon tiers)
+            std::vector<int> availableLevels;
+            availableLevels.push_back(1); // Level 1 always available
+            
+            if (waveNumber >= 3) availableLevels.push_back(2);
+            if (waveNumber >= 6) availableLevels.push_back(3);
+            if (waveNumber >= 10) availableLevels.push_back(4);
+            
+            std::uniform_int_distribution<int> levelDist(0, availableLevels.size() - 1);
+            int itemLevel = availableLevels[levelDist(gen)];
+            
+            // Only add if this item level can appear at this wave
+            if (canItemAppear(itemType, itemLevel, waveNumber)) {
+                int price = calculateItemPrice(itemType, itemLevel, waveNumber);
+                items.emplace_back(itemType, itemLevel, price);
+
+            } else {
+                // Fallback to weapon if item can't appear
+                generateItem = false;
+
+            }
         }
         
-        // Choose tier based on wave number (Brotato tier restrictions)
-        std::vector<WeaponTier> availableTiers;
-        availableTiers.push_back(WeaponTier::TIER_1);
-        
-        if (waveNumber >= 2) availableTiers.push_back(WeaponTier::TIER_2);
-        if (waveNumber >= 4) availableTiers.push_back(WeaponTier::TIER_3);
-        if (waveNumber >= 8) availableTiers.push_back(WeaponTier::TIER_4);
-        
-        std::uniform_int_distribution<int> tierDist(0, availableTiers.size() - 1);
-        WeaponTier tier = availableTiers[tierDist(gen)];
-        
-        int price = calculateItemPrice(weaponType, tier, waveNumber);
-        items.emplace_back(weaponType, tier, price);
+        if (!generateItem) {
+            // Generate weapon
+            std::uniform_int_distribution<int> weaponDist(0, 3); // 0-3 for 4 weapon types
+            WeaponType weaponType;
+            switch (weaponDist(gen)) {
+                case 0: weaponType = WeaponType::PISTOL; break;
+                case 1: weaponType = WeaponType::SMG; break;
+                case 2: weaponType = WeaponType::SHOTGUN; break;
+                case 3: weaponType = WeaponType::SNIPER; break;
+                default: weaponType = WeaponType::PISTOL; break;
+            }
+            
+            // Choose tier based on wave number (Brotato tier restrictions)
+            std::vector<WeaponTier> availableTiers;
+            availableTiers.push_back(WeaponTier::TIER_1);
+            
+            if (waveNumber >= 2) availableTiers.push_back(WeaponTier::TIER_2);
+            if (waveNumber >= 4) availableTiers.push_back(WeaponTier::TIER_3);
+            if (waveNumber >= 8) availableTiers.push_back(WeaponTier::TIER_4);
+            
+            std::uniform_int_distribution<int> tierDist(0, availableTiers.size() - 1);
+            WeaponTier tier = availableTiers[tierDist(gen)];
+            
+            int price = calculateItemPrice(weaponType, tier, waveNumber);
+            items.emplace_back(weaponType, tier, price);
+        }
     }
 }
 
@@ -307,15 +375,25 @@ void Shop::renderShopItem(SDL_Renderer* renderer, const ShopItem& item, int x, i
     }
     SDL_RenderDrawRect(renderer, &itemRect);
     
-    // Weapon icon - larger and centered
+    // Item icon - larger and centered
     SDL_Texture* icon = nullptr;
-    switch (item.weaponType) {
-        case WeaponType::PISTOL: icon = texWeaponPistol; break;
-        case WeaponType::SMG: icon = texWeaponSMG; break;
-        case WeaponType::SHOTGUN: icon = texWeaponShotgun; break;
-        case WeaponType::SNIPER: icon = texWeaponSniper; break;
-        case WeaponType::MELEE_STICK: icon = nullptr; break;
+    
+    if (item.type == ShopItemType::WEAPON) {
+        // Weapon icon
+        switch (item.weaponType) {
+            case WeaponType::PISTOL: icon = texWeaponPistol; break;
+            case WeaponType::SMG: icon = texWeaponSMG; break;
+            case WeaponType::SHOTGUN: icon = texWeaponShotgun; break;
+            case WeaponType::SNIPER: icon = texWeaponSniper; break;
+            case WeaponType::MELEE_STICK: icon = nullptr; break;
+        }
+    } else if (item.type == ShopItemType::ITEM) {
+        // Item icon
+        switch (item.itemType) {
+            case ItemType::HEALTH_REGENERATION: icon = texHealthRegen; break;
+        }
     }
+    
     if (icon) {
         SDL_Rect ir = {x + width/2 - 24, y + 10, 48, 48};
         SDL_RenderCopy(renderer, icon, nullptr, &ir);
@@ -504,8 +582,8 @@ void Shop::buyItem(int index, Player& player) {
     
     // Check if player has enough materials
     if (player.getStats().materials >= item.price) {
-        // Check if player can hold more weapons
         if (item.type == ShopItemType::WEAPON) {
+            // Check if player can hold more weapons
             // Create and add weapon to player with renderer for sprite loading
             auto weapon = std::make_unique<Weapon>(item.weaponType, item.tier);
             player.addWeapon(std::move(weapon), gameRef->getRenderer());
@@ -517,6 +595,23 @@ void Shop::buyItem(int index, Player& player) {
             
             // Remove item from shop
             items.erase(items.begin() + index);
+        }
+        else if (item.type == ShopItemType::ITEM) {
+            // Handle item purchases
+            if (item.itemType == ItemType::HEALTH_REGENERATION) {
+                // Calculate health regen increase: 0.5 HP/sec per level  
+                float regenIncrease = 0.5f * item.itemLevel;
+                player.getStats().healthRegen += regenIncrease;
+                
+                // Deduct materials
+                player.getStats().materials -= item.price;
+                
+                std::cout << "Bought " << item.name << " for " << item.price << " materials" << std::endl;
+                std::cout << "Health regeneration is now " << player.getStats().healthRegen << " HP/sec" << std::endl;
+                
+                // Remove item from shop
+                items.erase(items.begin() + index);
+            }
         }
     } else {
         std::cout << "Not enough materials! Need " << item.price << ", have " << player.getStats().materials << std::endl;
@@ -719,4 +814,52 @@ void Shop::handleMouseInput(int mouseX, int mouseY, bool mousePressed, Player& p
     }
     
     lastMousePressed = mousePressed;
+}
+
+// New method: Calculate price for items (not weapons)
+int Shop::calculateItemPrice(ItemType itemType, int itemLevel, int waveNumber) {
+    int basePrice = 20; // Base price for items
+    
+    // Item type price modifiers
+    switch (itemType) {
+        case ItemType::HEALTH_REGENERATION:
+            basePrice = 10; // Health regen is valuable (increased due to faster regeneration)
+            break;
+    }
+    
+    // Level multiplier (similar to weapon tiers)
+    basePrice *= itemLevel;
+    
+    // Wave scaling (increases with wave)
+    basePrice += waveNumber * 2;
+    
+    return basePrice;
+}
+
+// New method: Check if item can appear at current wave
+bool Shop::canItemAppear(WeaponType weaponType, WeaponTier tier, int waveNumber) {
+    // Weapon availability by wave (Brotato-style)
+    switch (tier) {
+        case WeaponTier::TIER_1: return true; // Always available
+        case WeaponTier::TIER_2: return waveNumber >= 2;
+        case WeaponTier::TIER_3: return waveNumber >= 4;
+        case WeaponTier::TIER_4: return waveNumber >= 8;
+    }
+    return true;
+}
+
+// New method: Check if item can appear at current wave
+bool Shop::canItemAppear(ItemType itemType, int itemLevel, int waveNumber) {
+    // Item availability by wave and level
+    switch (itemType) {
+        case ItemType::HEALTH_REGENERATION:
+            switch (itemLevel) {
+                case 1: return true; // Always available
+                case 2: return waveNumber >= 3;
+                case 3: return waveNumber >= 6;
+                case 4: return waveNumber >= 10;
+            }
+            break;
+    }
+    return true;
 }

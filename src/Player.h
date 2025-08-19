@@ -100,6 +100,7 @@ private:
     int experience;
     int level;
     float healthRegenTimer;
+    float healthRegenAccumulator; // Accumulates fractional health regeneration
     
     // Weapon inventory (max 6 weapons like Brotato)
     std::vector<std::unique_ptr<Weapon>> weapons;
