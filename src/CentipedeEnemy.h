@@ -36,8 +36,8 @@ private:
     // Константы
     static constexpr int INITIAL_SEGMENTS = 10;
     static constexpr float SEGMENT_SPACING = 50.0f;  // Увеличено для больших спрайтов (64px)
-    static constexpr float MOVEMENT_SPEED = 120.0f;  // Увеличено в 2 раза
-    static constexpr float MOVEMENT_TIMER = 0.6f;    // Быстрее движение
+    static constexpr float MOVEMENT_SPEED = 180.0f;  // Увеличено еще больше
+    static constexpr float MOVEMENT_TIMER = 0.4f;    // Еще быстрее движение
     static constexpr float BASE_FIRE_COOLDOWN = 2.0f;
     
     // Данные сегментов
