@@ -7,6 +7,7 @@
 BossEnemy::BossEnemy(Vector2 pos, SDL_Renderer* renderer)
     : Enemy(pos, renderer), fireCooldown(1.5f), timeSinceLastShot(0.0f),
       movementTimer(0.0f), isSprintPhase(false), bossTexture(nullptr), bossRushTexture(nullptr), facingRight(false), maxHealth(500) {
+
     
     // Босс характеристики - супер танковый
     speed = 68.0f;          // На 15% медленнее базового (80 * 0.85 = 68)

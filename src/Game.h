@@ -17,7 +17,9 @@
 class SlimeEnemy;
 class PebblinEnemy;
 class BossEnemy;
+
 class FractalBoss;
+
 
 enum class EnemySpawnType {
     BASE,
@@ -70,8 +72,20 @@ private:
     float getMaterialDropChance() const;
     void renderUI();
     
+    // Boss types enum
+    enum class BossType {
+        NONE,
+        REGULAR,
+        FRACTAL,
+        CENTIPEDE
+    };
+    
     // Boss spawning helpers
     bool shouldSpawnFractalBoss() const;
+    BossType chooseBossType() const;
+    
+    // Система предотвращения повторения боссов подряд
+    BossType lastBossType;
     
 private:
     SDL_Window* window;
@@ -87,14 +101,7 @@ private:
     bool bossSpawnedThisWave;
     bool swarmSpawnedThisWave;
     
-    // Система предотвращения повторения боссов подряд
-    enum class BossType {
-        NONE,
-        REGULAR,
-        FRACTAL
-    };
-    BossType lastBossType;
-    
+
     std::vector<SpawnIndicator> spawnIndicators;
     std::vector<std::unique_ptr<ExperienceOrb>> experienceOrbs;
     std::vector<std::unique_ptr<Material>> materials;

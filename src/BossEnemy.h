@@ -16,6 +16,7 @@ public:
     int getMaxHealth() const override;
     bool isBossUnit() const override { return true; }
     bool isLeader() const override { return false; }
+
     
 private:
     void loadSprites(SDL_Renderer* renderer);
