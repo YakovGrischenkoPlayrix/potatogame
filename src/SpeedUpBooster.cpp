@@ -2,8 +2,7 @@
 #include <iostream>
 
 SpeedUpBooster::SpeedUpBooster(const Vector2& spawnPosition)
-    : position(spawnPosition), radius(16.0f), alive(true), lifetime(0.0f), maxLifetime(5.0f),
-      texture(nullptr), textureWidth(0), textureHeight(0) {}
+    : Booster(spawnPosition, 5.0f) {}
 
 SpeedUpBooster::~SpeedUpBooster() {}
 
@@ -29,6 +28,7 @@ void SpeedUpBooster::update(float deltaTime) {
 
 void SpeedUpBooster::render(SDL_Renderer* renderer) {
     if (!alive) return;
+    
     if (texture) {
         // Draw centered at position
         int scaledW = textureWidth;
@@ -49,6 +49,9 @@ void SpeedUpBooster::render(SDL_Renderer* renderer) {
             }
         }
     }
+    
+    // Render progress bar from base class
+    renderProgressBar(renderer);
 }
 
 void SpeedUpBooster::collect() {

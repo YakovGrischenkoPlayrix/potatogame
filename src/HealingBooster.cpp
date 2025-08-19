@@ -2,8 +2,7 @@
 #include <iostream>
 
 HealingBooster::HealingBooster(const Vector2& spawnPosition)
-    : position(spawnPosition), radius(16.0f), alive(true), lifetime(0.0f), maxLifetime(5.0f),
-      texture(nullptr), textureWidth(0), textureHeight(0) {}
+    : Booster(spawnPosition, 5.0f) {}
 
 HealingBooster::~HealingBooster() {}
 
@@ -29,6 +28,7 @@ void HealingBooster::update(float deltaTime) {
 
 void HealingBooster::render(SDL_Renderer* renderer) {
     if (!alive) return;
+    
     if (texture) {
         // Draw centered at position
         int scaledW = textureWidth;
@@ -49,6 +49,9 @@ void HealingBooster::render(SDL_Renderer* renderer) {
             }
         }
     }
+    
+    // Render progress bar from base class
+    renderProgressBar(renderer);
 }
 
 void HealingBooster::collect() {
