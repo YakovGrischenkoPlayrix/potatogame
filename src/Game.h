@@ -85,6 +85,15 @@ private:
     std::unique_ptr<Enemy> currentBoss;
     bool bossSpawnedThisWave;
     bool swarmSpawnedThisWave;
+    
+    // Система предотвращения повторения боссов подряд
+    enum class BossType {
+        NONE,
+        REGULAR,
+        FRACTAL
+    };
+    BossType lastBossType;
+    
     std::vector<SpawnIndicator> spawnIndicators;
     std::vector<std::unique_ptr<ExperienceOrb>> experienceOrbs;
     std::vector<std::unique_ptr<Material>> materials;

@@ -19,7 +19,7 @@ Game::Game() : window(nullptr), renderer(nullptr), running(false),
                timeSinceLastSpawn(0), score(0), wave(1), mousePos(0, 0),
                waveTimer(0), waveDuration(10.0f), waveActive(true), materialBag(0),
                currentBoss(nullptr), bossSpawnedThisWave(false), swarmSpawnedThisWave(false),
-               defaultFont(nullptr) {
+               lastBossType(BossType::NONE), defaultFont(nullptr) {
 }
 
 Game::~Game() {
@@ -175,6 +175,8 @@ void Game::update(float deltaTime) {
             waveTimer = 0;
             bossSpawnedThisWave = false; // Сброс флага босса для новой волны
             swarmSpawnedThisWave = false;
+            // Сброс типа последнего босса для новой волны (позволяет случайный выбор)
+            lastBossType = BossType::NONE;
             std::cout << "Wave " << wave << " will start after shop" << std::endl;
             
             // Increase wave duration by 2.5 seconds each wave, capped at 30 seconds
@@ -752,10 +754,12 @@ void Game::spawnEnemies() {
             bool spawnFractalBoss = shouldSpawnFractalBoss();
             if (spawnFractalBoss) {
                 currentBoss = CreateFractalBoss(bossSpawnPos, renderer);
-                std::cout << "Fractal Boss spawned at wave " << wave << "!" << std::endl;
+                lastBossType = BossType::FRACTAL;
+                std::cout << "Fractal Boss spawned at wave " << wave << " (preventing repeat of regular boss)!" << std::endl;
             } else {
                 currentBoss = CreateBossEnemy(bossSpawnPos, renderer);
-                std::cout << "Regular Boss spawned at wave " << wave << "!" << std::endl;
+                lastBossType = BossType::REGULAR;
+                std::cout << "Regular Boss spawned at wave " << wave << " (preventing repeat of fractal boss)!" << std::endl;
             }
             bossSpawnedThisWave = true;
         }
@@ -855,8 +859,15 @@ void Game::updateSpawnIndicators(float deltaTime) {
                 case EnemySpawnType::BOSS:
                     if (!currentBoss && !bossSpawnedThisWave) {
                         bool spawnFractalBoss = shouldSpawnFractalBoss();
-                        currentBoss = spawnFractalBoss ? CreateFractalBoss(indicator.position, renderer)
-                                                       : CreateBossEnemy(indicator.position, renderer);
+                        if (spawnFractalBoss) {
+                            currentBoss = CreateFractalBoss(indicator.position, renderer);
+                            lastBossType = BossType::FRACTAL;
+                            std::cout << "Fractal Boss spawned via indicator (preventing repeat of regular boss)!" << std::endl;
+                        } else {
+                            currentBoss = CreateBossEnemy(indicator.position, renderer);
+                            lastBossType = BossType::REGULAR;
+                            std::cout << "Regular Boss spawned via indicator (preventing repeat of fractal boss)!" << std::endl;
+                        }
                         bossSpawnedThisWave = true;
                     }
                     break;
@@ -1076,6 +1087,17 @@ bool Game::shouldSpawnFractalBoss() const {
     static std::random_device rd;
     static std::mt19937 gen(rd());
     
+    // Если в прошлый раз был фрактальный босс, то сейчас должен быть обычный
+    if (lastBossType == BossType::FRACTAL) {
+        return false;
+    }
+    
+    // Если в прошлый раз был обычный босс, то сейчас должен быть фрактальный
+    if (lastBossType == BossType::REGULAR) {
+        return true;
+    }
+    
+    // Если это первый босс (lastBossType == NONE), используем случайный выбор
     // Вероятность фрактального босса увеличивается с волнами
     // Волна 2-3: 20% фрактального, 80% обычного
     // Волна 4-5: 40% фрактального, 60% обычного  

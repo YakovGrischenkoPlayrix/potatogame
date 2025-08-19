@@ -6,17 +6,17 @@
 
 MiniBossEnemy::MiniBossEnemy(Vector2 pos, SDL_Renderer* renderer, int variantIndex, bool isLeaderPart)
     : Enemy(pos, renderer), fireCooldown(2.0f), timeSinceLastShot(0.0f), bulletSpeed(500.0f), bulletDamage(8),
-      variant(variantIndex), bossTexture(nullptr), bossRushTexture(nullptr), facingRight(false), leader(isLeaderPart), maxHealth(900) {
+      variant(variantIndex), bossTexture(nullptr), bossRushTexture(nullptr), facingRight(false), leader(isLeaderPart), maxHealth(100) {
     // Stats
     if (leader) {
-        maxHealth = 1500;
+        maxHealth = 100;
         health = maxHealth;
         radius = 38.0f;
         spriteWidth = 120;
         spriteHeight = 120;
         speed = 95.0f;
     } else {
-        maxHealth = 900;
+        maxHealth = 100;
         health = maxHealth;
         radius = 30.0f;
         spriteWidth = 96;
