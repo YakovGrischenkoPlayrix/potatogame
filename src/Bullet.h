@@ -8,7 +8,10 @@ enum class BulletType {
     ENEMY_LOB,
     SHOTGUN,
     SNIPER,
-    BOSS_BULLET
+    BOSS_BULLET,
+    FRACTAL_CENTER,   // Красные пули центрального узла
+    FRACTAL_LEVEL1,   // Зеленые пули уровня 1
+    FRACTAL_LEVEL2    // Синие пули уровня 2
 };
 
 class Bullet {
