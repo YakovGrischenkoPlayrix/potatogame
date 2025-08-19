@@ -15,11 +15,13 @@
 // Forward declarations
 class SlimeEnemy;
 class PebblinEnemy;
+class BossEnemy;
 
 enum class EnemySpawnType {
     BASE,
     SLIME,
-    PEBBLIN
+    PEBBLIN,
+    BOSS
 };
 
 struct SpawnIndicator {
@@ -72,6 +74,10 @@ private:
     std::unique_ptr<Player> player;
     std::vector<std::unique_ptr<Enemy>> enemies;
     std::vector<std::unique_ptr<Bullet>> bullets;
+    
+    // Босс система - только один босс за волну
+    std::unique_ptr<Enemy> currentBoss;
+    bool bossSpawnedThisWave;
     std::vector<SpawnIndicator> spawnIndicators;
     std::vector<std::unique_ptr<ExperienceOrb>> experienceOrbs;
     std::vector<std::unique_ptr<Material>> materials;
